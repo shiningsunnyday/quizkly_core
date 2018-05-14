@@ -3,7 +3,7 @@ import json
 import re
 import unittest
 
-from create_squad_records import  get_question_sentence_tuples
+from create_squad_records import get_question_sentence_tuples
 
 
 class TestCreateSquadRecords(unittest.TestCase):
@@ -27,9 +27,13 @@ class TestCreateSquadRecords(unittest.TestCase):
                    ]
                 }
              ],
-             "context": "Obama was president. He was popular. Washington was where he was. He married Michelle in 1920. He hated bad people."}
+             "context": "Obama was president. He was popular.
+                         Washington was where he was.
+                         He married Michelle in 1920.
+                         He hated bad people."
+            }
         """
-        test_json_str = re.sub("\s\s+" , " ", test_json_str)
+        test_json_str = re.sub("\s\s+", " ", test_json_str)
         cls.squad_data = json.loads(test_json_str)
 
     def test_get_question_sentence_tuples(self):
@@ -47,6 +51,7 @@ class TestCreateSquadRecords(unittest.TestCase):
             list(get_question_sentence_tuples(self.squad_data)),
             expected_data_tuples
         )
+
 
 if __name__ == "__main__":
     unittest.main()

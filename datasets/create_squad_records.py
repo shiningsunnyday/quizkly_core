@@ -32,10 +32,9 @@ def get_question_sentence_tuples(paragraph_data):
         a list of tuples containing the initial sentence, crafted question
         (if it exists), answer to the question if question exists,
         question-worthy label (1 if question exists, 0 otherwise),
-        start index of answer tokens (inclusive) and 
+        start index of answer tokens (inclusive) and
         end index of answer tokens (exclusive).
     """
-    processed_tuples = []
     context = paragraph_data["context"]
     raw_sentences = nltk.sent_tokenize(context)
     sentence_idx = [context.find(sent) for sent in raw_sentences]
@@ -60,13 +59,14 @@ def get_question_sentence_tuples(paragraph_data):
         if not question_worthy:
             yield (sent, "", "", 0, -1, -1)
 
+
 def _write_tf_records(args):
     with open(args.input_file) as f:
         json_data = json.loads(f.read())
     options = tf.python_io.TFRecordOptions(
                 compression_type=tf.python_io.TFRecordCompressionType.ZLIB)
     tfrecord_writer = tf.python_io.TFRecordWriter(
-        filename, options=options)
+        args.output_file, options=options)
 
     for wiki_page in json_data['data']:
         for para_data in wiki_page['paragraphs']:
@@ -76,6 +76,7 @@ def _write_tf_records(args):
                 tfrecord_writer.write(tf_example.SerializeToString())
     tfrecord_writer.close()
 
+
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument(
@@ -84,14 +85,9 @@ if __name__ == "__main__":
         help="Location of json file containing squad data.")
 
     parser.add_argument(
-        "--output_dir",
+        "--output_file",
         required=True,
-        help="Directory to output tfrecords.")
+        help="File to output tfrecords.")
 
     args = parser.parse_args()
     _write_tf_records(args)
-
-    
-
-
-
