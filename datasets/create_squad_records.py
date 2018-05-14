@@ -4,11 +4,9 @@ Script to generate tfrecords from SQuAD json files.
 from argparse import ArgumentParser
 import json
 import nltk
-import re
-import string
 import tensorflow as tf
 
-from dataset_utils import create_example
+from dataset_utils import create_example, strip_punctuation
 
 SENTENCE = "sentence"
 QUESTION = "question"
@@ -35,14 +33,19 @@ def get_question_sentence_tuples(paragraph_data):
         start index of answer tokens (inclusive) and
         end index of answer tokens (exclusive).
     """
+
+    def _find_sub_list(sl, l):
+        sll = len(sl)
+        for ind in (i for i, e in enumerate(l) if e == sl[0]):
+            if l[ind: ind + sll] == sl:
+                return (ind, ind+sll)
+        return None
+
     context = paragraph_data["context"]
     raw_sentences = nltk.sent_tokenize(context)
     sentence_idx = [context.find(sent) for sent in raw_sentences]
     for i, sent in enumerate(raw_sentences):
-        split_sent = [
-            re.sub('['+string.punctuation+']', '', s)
-            for s in sent.split()
-        ]
+        split_sent = [strip_punctuation(s) for s in sent.split()]
         question_worthy = False
         for qa in paragraph_data["qas"]:
             question = qa["question"]
@@ -50,12 +53,16 @@ def get_question_sentence_tuples(paragraph_data):
             for answer in answers:
                 answer_idx = answer["answer_start"]
                 ans_text = answer["text"]
+                split_ans = [strip_punctuation(a) for a in ans_text.split()]
                 if (sentence_idx[i] <= answer_idx and
                         sentence_idx[i] + len(sent) > answer_idx):
                     question_worthy = True
-                    start_idx = split_sent.index(ans_text)
-                    end_idx = start_idx + len(ans_text.split())
-                    yield (sent, question, ans_text, 1, start_idx, end_idx)
+                    ans_range = _find_sub_list(split_ans, split_sent)
+                    if ans_range:
+                        start_idx, end_idx = ans_range
+                        yield (sent, question, ans_text, 1, start_idx, end_idx)
+                    else:
+                        yield (sent, question, ans_text, 1, -1, -1)
         if not question_worthy:
             yield (sent, "", "", 0, -1, -1)
 
@@ -67,17 +74,37 @@ def _write_tf_records(args):
                 compression_type=tf.python_io.TFRecordCompressionType.ZLIB)
     tfrecord_writer = tf.python_io.TFRecordWriter(
         args.output_file, options=options)
-
+    total_examples = 0
+    num_qn_worthy = 0  # Number of question-worthy examples.
+    # Number of examples where an exact match couldn't find an answer.
+    # Needs a fix soon.
+    num_no_ans = 0
     for wiki_page in json_data['data']:
         for para_data in wiki_page['paragraphs']:
             data_tuples = get_question_sentence_tuples(para_data)
             for tup in data_tuples:
+                if tup[3] == 1:
+                    num_qn_worthy += 1
+                if tup[1] != "" and tup[5] == -1:
+                    num_no_ans += 1
                 tf_example = create_example(tup, FEATURE_NAMES)
                 tfrecord_writer.write(tf_example.SerializeToString())
+                total_examples += 1
+    tf.logging.info("Total Number of Examples: %d" % total_examples)
+    tf.logging.info(
+        "Number of Question-Worthy Sentence Examples: %d" % num_qn_worthy)
+    tf.logging.info(
+        "Number of Question-Unworthy Sentence Examples: %d" %
+        (total_examples - num_qn_worthy)
+    )
+    tf.logging.info(
+        "Examples where an exact string match couldn't find an answer: %d" %
+        (num_no_ans))
     tfrecord_writer.close()
 
 
 if __name__ == "__main__":
+    tf.logging.set_verbosity(tf.logging.INFO)
     parser = ArgumentParser()
     parser.add_argument(
         "--input_file",

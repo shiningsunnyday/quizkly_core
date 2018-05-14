@@ -18,17 +18,17 @@ class TestCreateSquadRecords(unittest.TestCase):
                 },
                 {"question": "Where was Obama?",
                   "answers": [
-                      {"text": "Washington", "answer_start": 37}
+                      {"text": "Washington DC", "answer_start": 37}
                    ]
                 },
                 {"question": "Who married Obama?",
                   "answers": [
-                      {"text": "Michelle", "answer_start": 77}
+                      {"text": "Michelle", "answer_start": 80}
                    ]
                 }
              ],
              "context": "Obama was president. He was popular.
-                         Washington was where he was.
+                         Washington DC was where he was.
                          He married Michelle in 1920.
                          He hated bad people."
             }
@@ -41,8 +41,8 @@ class TestCreateSquadRecords(unittest.TestCase):
             ("Obama was president.", "Who was Obama?",
              "president", 1, 2, 3),
             ("He was popular.", "", "", 0, -1, -1),
-            ("Washington was where he was.", "Where was Obama?",
-             "Washington", 1, 0, 1),
+            ("Washington DC was where he was.", "Where was Obama?",
+             "Washington DC", 1, 0, 2),
             ("He married Michelle in 1920.", "Who married Obama?",
              "Michelle", 1, 2, 3),
             ("He hated bad people.", "", "", 0, -1, -1),
