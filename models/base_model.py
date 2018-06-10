@@ -25,16 +25,18 @@ class BaseModel(object):
         summary_op: op for tensorboard summary.
         train_op: op for training, if mode is TRAIN.
     """
-    def __init__(self, hparams, mode):
+    def __init__(self, hparams, mode, hub_module=None):
         """
         Creates a model.
 
         Args:
             hparams: tensorflow hparams object specifying hyperparamaters.
             mode: mode enum
+            hub_module: optional tensorflow_hub module, if required in graph.
         """
         self._hparams = hparams
         self._mode = mode
+        self._hub_module = hub_module
 
     def build_model(self):
         """

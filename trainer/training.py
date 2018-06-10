@@ -1,9 +1,11 @@
 """Tensorflow utility functions for training"""
 
 import os
+import tensorflow_hub as hub
 
 from tqdm import trange
 import tensorflow as tf
+from models.base_model import Mode
 
 from trainer.utils import save_dict_to_json
 from trainer.evaluation import evaluate_sess
@@ -34,21 +36,23 @@ def train_sess(sess, model, num_steps, writer):
                 [train_op, loss,
                  summary_op, global_step])
             # Write summaries for tensorboard
-            writer.add_summary(summ, global_step_val)
+            #writer.add_summary(summ, global_step_val)
         else:
             _, loss_val = sess.run([train_op, loss])
         # Log the loss in the tqdm progress bar
-        t.set_postfix(loss='{:05.3f}'.format(loss_val))
+        t.set_postfix(loss='{:05.3f}'.format(float(loss_val)))
 
 
-def train_and_evaluate(train_model, eval_model, model_dir, num_epochs,
-                       eval_steps, tracking_metric="accuracy",
+def train_and_evaluate(train_model, eval_model, model_class, hparams,
+                       model_dir, num_epochs, eval_steps,
+                       tracking_metric="accuracy",
                        restore_from=None):
     """Train the model and evaluate every epoch.
 
     Args:
         train_model_spec: (model) model to be trained.
         eval_model_spec: (model) model graph to be evaluated.
+        model_class: (classpath) for exporting graph. 
         model_dir: (string) directory containing config, weights and log
         num_epochs: (int) number of training epochs.
         restore_from: (string) directory or file containing weights to
@@ -57,29 +61,33 @@ def train_and_evaluate(train_model, eval_model, model_dir, num_epochs,
             performing models.
     """
     # Initialize tf.Saver instances to save weights during training.
-    last_saver = tf.train.Saver()  # will keep last 5 epochs.
+    #last_saver = tf.train.Saver()  # will keep last 5 epochs.
     # only keep 1 best checkpoint (best on eval).
-    best_saver = tf.train.Saver(max_to_keep=1)
+    # best_saver = tf.train.Saver(max_to_keep=1)
     begin_at_epoch = 0
 
-    with tf.Session() as sess:
+    with tf.Session(graph=tf.Graph()) as sess:
+        hub_module = hub.Module(
+            "https://tfhub.dev/google/universal-sentence-encoder/1")
+        train_model = train_model(hparams, Mode.TRAIN, hub_module=hub_module)
+        train_model.build_model()
         # Initialize model variables
         sess.run(train_model.variable_init_op)
-
         # Reload weights from directory if specified
-        if restore_from is not None:
-            tf.logging.info(
-                "Restoring parameters from {}".format(restore_from))
-            if os.path.isdir(restore_from):
-                restore_from = tf.train.latest_checkpoint(restore_from)
-                begin_at_epoch = int(restore_from.split('-')[-1])
-            last_saver.restore(sess, restore_from)
+        # if restore_from is not None:
+        #     tf.logging.info(
+        #         "Restoring parameters from {}".format(restore_from))
+        #     if os.path.isdir(restore_from):
+        #         restore_from = tf.train.latest_checkpoint(restore_from)
+        #         begin_at_epoch = int(restore_from.split('-')[-1])
+        #     last_saver.restore(sess, restore_from)
 
         # For tensorboard (takes care of writing summaries to files)
-        train_writer = tf.summary.FileWriter(
-            os.path.join(model_dir, 'train_summaries'), sess.graph)
-        eval_writer = tf.summary.FileWriter(
-            os.path.join(model_dir, 'eval_summaries'), sess.graph)
+        train_writer = None
+        # train_writer = tf.summary.FileWriter(
+        #     os.path.join(model_dir, 'train_summaries'), sess.graph)
+        # eval_writer = tf.summary.FileWriter(
+        #     os.path.join(model_dir, 'eval_summaries'), sess.graph)
 
         best_eval_acc = 0.0
         for epoch in range(begin_at_epoch,
@@ -88,36 +96,51 @@ def train_and_evaluate(train_model, eval_model, model_dir, num_epochs,
             tf.logging.info("Epoch {}/{}".format(
                 epoch + 1, begin_at_epoch + num_epochs))
             # One batch in one epoch (one full pass over the training set)
-            train_sess(sess, train_model, 10, train_writer)
+            train_sess(sess, train_model, 100, train_writer)
 
             # Save weights
             last_save_path = os.path.join(
                 model_dir, 'after-epoch')
-            last_saver.save(sess, last_save_path, global_step=epoch + 1)
+            train_model.saver.save(sess, last_save_path, global_step=epoch + 1)
 
-            # Evaluate for one epoch on validation set
-            metrics = evaluate_sess(
-                sess, eval_model, eval_steps, eval_writer)
+            # # Evaluate for one epoch on validation set
+            # metrics = evaluate_sess(
+            #     sess, eval_model, eval_steps, eval_writer)
 
-            # If best_eval, best_save_path
-            eval_acc = metrics[tracking_metric]
-            if eval_acc > best_eval_acc:
-                # Store new best accuracy
-                best_eval_acc = eval_acc
-                # Save weights
-                best_save_path = os.path.join(
-                    model_dir, 'best_weights', 'after-epoch')
-                best_save_path = best_saver.save(
-                    sess, best_save_path, global_step=epoch + 1)
-                tf.logging.info(
-                    "- Found new best {}, saving in {}".format(
-                        tracking_metric, best_save_path))
-                # Save best eval metrics in a json file in the model directory
-                best_json_path = os.path.join(
-                    model_dir, "metrics_eval_best_weights.json")
-                save_dict_to_json(metrics, best_json_path)
+            # # If best_eval, best_save_path
+            # eval_acc = metrics[tracking_metric]
+            # if eval_acc > best_eval_acc:
+            #     # Store new best accuracy
+            #     best_eval_acc = eval_acc
+            #     # Save weights
+            #     best_save_path = os.path.join(
+            #         model_dir, 'best_weights', 'after-epoch')
+            #     best_save_path = best_saver.save(
+            #         sess, best_save_path, global_step=epoch + 1)
+            #     tf.logging.info(
+            #         "- Found new best {}, saving in {}".format(
+            #             tracking_metric, best_save_path))
+            #     # Save best eval metrics in a json file in the model directory
+            #     best_json_path = os.path.join(
+            #         model_dir, "metrics_eval_best_weights.json")
+            #     save_dict_to_json(metrics, best_json_path)
 
-            # Save latest eval metrics in a json file in the model directory
-            last_json_path = os.path.join(
-                model_dir, "metrics_eval_last_weights.json")
-            save_dict_to_json(metrics, last_json_path)
+            # # Save latest eval metrics in a json file in the model directory
+            # last_json_path = os.path.join(
+            #     model_dir, "metrics_eval_last_weights.json")
+            # save_dict_to_json(metrics, last_json_path)
+
+     # Export Model
+    latest_checkpoint = tf.train.latest_checkpoint(
+        os.path.join(model_dir))#, "best_weights"))
+    latest_checkpoint = os.path.join(model_dir, "after-epoch-1")
+    saved_model_dir = os.path.join(
+        model_dir,
+        "saved_model",
+        os.path.basename(latest_checkpoint).replace(
+            "model.ckpt-", "model-")
+    )
+    tf.logging.info("Writing saved model to %s", saved_model_dir)
+    builder = tf.saved_model.builder.SavedModelBuilder(saved_model_dir)
+    model_class.export_model(
+        hparams, latest_checkpoint, builder)

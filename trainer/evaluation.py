@@ -73,3 +73,4 @@ def evaluate(model, model_dir, num_steps, restore_from):
         save_path = os.path.join(
             model_dir, "metrics_test_{}.json".format(metrics_name))
         save_dict_to_json(metrics, save_path)
+        return metrics

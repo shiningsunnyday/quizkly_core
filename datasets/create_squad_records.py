@@ -4,9 +4,12 @@ Script to generate tfrecords from SQuAD json files.
 from argparse import ArgumentParser
 import json
 import nltk
+from random import shuffle
+import os
 import tensorflow as tf
 
-from dataset_utils import create_example, strip_punctuation
+from datasets.dataset_utils import (
+    create_example, strip_punctuation, write_to_file)
 
 SENTENCE = "sentence"
 QUESTION = "question"
@@ -66,14 +69,12 @@ def get_question_sentence_tuples(paragraph_data):
         if not question_worthy:
             yield (sent, "", "", 0, -1, -1)
 
-
 def _write_tf_records(args):
     with open(args.input_file) as f:
         json_data = json.loads(f.read())
-    options = tf.python_io.TFRecordOptions(
-                compression_type=tf.python_io.TFRecordCompressionType.ZLIB)
-    tfrecord_writer = tf.python_io.TFRecordWriter(
-        args.output_file, options=options)
+
+    pos_examples = []
+    neg_examples = []
     total_examples = 0
     num_qn_worthy = 0  # Number of question-worthy examples.
     # Number of examples where an exact match couldn't find an answer.
@@ -83,12 +84,14 @@ def _write_tf_records(args):
         for para_data in wiki_page['paragraphs']:
             data_tuples = get_question_sentence_tuples(para_data)
             for tup in data_tuples:
+                tf_example = create_example(tup, FEATURE_NAMES)
                 if tup[3] == 1:
                     num_qn_worthy += 1
+                    pos_examples.append(tf_example)
+                elif tup[3] == 0:
+                    neg_examples.append(tf_example)
                 if tup[1] != "" and tup[5] == -1:
                     num_no_ans += 1
-                tf_example = create_example(tup, FEATURE_NAMES)
-                tfrecord_writer.write(tf_example.SerializeToString())
                 total_examples += 1
     tf.logging.info("Total Number of Examples: %d" % total_examples)
     tf.logging.info(
@@ -100,7 +103,18 @@ def _write_tf_records(args):
     tf.logging.info(
         "Examples where an exact string match couldn't find an answer: %d" %
         (num_no_ans))
-    tfrecord_writer.close()
+    pos_bound = int(0.9*(len(pos_examples)))
+    neg_bound = int(0.9*(len(neg_examples)))
+    train_examples = pos_examples[:pos_bound] + neg_examples[:neg_bound]
+    print(len(train_examples))
+    test_examples = pos_examples[pos_bound:] + neg_examples[neg_bound:]
+    shuffle(train_examples)
+    write_to_file(
+        train_examples, os.path.join(args.output_path, "train.tfrecords"))
+    shuffle(test_examples)
+    print(len(test_examples))
+    write_to_file(
+        test_examples, os.path.join(args.output_path, "test.tfrecords"))
 
 
 if __name__ == "__main__":
@@ -112,9 +126,17 @@ if __name__ == "__main__":
         help="Location of json file containing squad data.")
 
     parser.add_argument(
-        "--output_file",
+        "--output_path",
         required=True,
-        help="File to output tfrecords.")
+        help=("Path of file to output tfrecords to. path/test.tfrecords"
+              " and path/train.tfrecords"))
 
+    parser.add_argument(
+        "--train_split", default=0.8,
+        help=("Percentage of records to go into the train file."
+              "Remainder goes to test file.")
+    )
+    
+    parser.add_argument
     args = parser.parse_args()
     _write_tf_records(args)

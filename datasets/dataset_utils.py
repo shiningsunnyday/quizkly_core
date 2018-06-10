@@ -31,3 +31,11 @@ def create_example(values, names):
 def strip_punctuation(s):
     """Strips punctuation from text."""
     return re.sub('['+string.punctuation+']', '', s)
+
+def write_to_file(examples, filepath):
+    """Writes serialized examples to filepath"""
+    tfrecord_writer = tf.python_io.TFRecordWriter(
+        filepath)
+    for ex in examples:
+        tfrecord_writer.write(ex.SerializeToString())
+    tfrecord_writer.close()

@@ -5,6 +5,7 @@ import importlib
 import os
 
 import tensorflow as tf
+import tensorflow_hub as hub
 
 from models.base_model import Mode
 from trainer.training import train_and_evaluate
@@ -14,9 +15,9 @@ parser.add_argument('--model_class', required=True,
                     help="Class name of model")
 parser.add_argument('--hparams_class', required=True,
                     help="Hparams name of model")
-parser.add_argument('--num_eval_steps', default=10,
+parser.add_argument('--num_eval_steps', default=10, type=int,
                     help="Number of eval batches.")
-parser.add_argument('--num_epochs', default=1000,
+parser.add_argument('--num_epochs', default=1000, type=int,
                     help="Number of training epochs.")
 parser.add_argument('--tracking_metric', default='accuracy',
                     help="Metric to gauge best model to save.")
@@ -24,6 +25,9 @@ parser.add_argument('--model_dir', required=True)
 parser.add_argument(
     '--restore_dir', default=None,
     help="Optional, directory containing weights to reload before training")
+parser.add_argument(
+    '--hub_module_url', default=None,
+    help="URL to hub module if model requires it.")
 
 
 def get_attribute_from_path(path):
@@ -64,19 +68,23 @@ if __name__ == '__main__':
     tf.logging.info("Creating the model...")
     _Model = get_attribute_from_path(args.model_class)
     hparams = get_attribute_from_path(args.hparams_class)
-    train_model = _Model(hparams, Mode.TRAIN)
-    eval_model = _Model(hparams, Mode.EVAL)
-    with tf.variable_scope('model'):
-        train_model.build_model()
-    with tf.variable_scope('model', reuse=True):
-        eval_model.build_model()
+    hub_module = None
+    if args.hub_module_url:
+        hub_module = hub.Module(args.hub_module_url, trainable=True)
+    train_model = _Model#(hparams, Mode.TRAIN, hub_module=hub_module)
+    eval_model = None
+    # eval_model = _Model(hparams, Mode.EVAL, hub_module=hub_module)
+    #with tf.variable_scope('model'):
+    #train_model.build_model()
+    # with tf.variable_scope('model', reuse=True):
+    #     eval_model.build_model()
     tf.logging.info("- done.")
 
     # Train the model
     tf.logging.info(
         "Starting training for {} epoch(s)".format(args.num_epochs))
     train_and_evaluate(
-        train_model, eval_model, args.model_dir,
+        train_model, eval_model, _Model, hparams, args.model_dir,
         args.num_epochs, args.num_eval_steps,
         tracking_metric=args.tracking_metric,
         restore_from=args.restore_dir)
