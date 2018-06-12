@@ -38,18 +38,29 @@ class TestCreateSquadRecords(unittest.TestCase):
 
     def test_get_question_sentence_tuples(self):
         expected_data_tuples = [
-            ("Obama was president.", "Who was Obama?",
-             "president", 1, 2, 3),
+            ("Obama was president.", "Who was Obama?", "president", 1, 2, 3),
             ("He was popular.", "", "", 0, -1, -1),
-            ("Washington DC was where he was.", "Where was Obama?",
-             "Washington DC", 1, 0, 2),
-            ("He married Michelle in 1920.", "Who married Obama?",
-             "Michelle", 1, 2, 3),
+            (
+                "Washington DC was where he was.",
+                "Where was Obama?",
+                "Washington DC",
+                1,
+                0,
+                2,
+            ),
+            (
+                "He married Michelle in 1920.",
+                "Who married Obama?",
+                "Michelle",
+                1,
+                2,
+                3,
+            ),
             ("He hated bad people.", "", "", 0, -1, -1),
         ]
         self.assertListEqual(
             list(get_question_sentence_tuples(self.squad_data)),
-            expected_data_tuples
+            expected_data_tuples,
         )
 
 

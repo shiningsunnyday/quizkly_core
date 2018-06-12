@@ -9,7 +9,10 @@ import os
 import tensorflow as tf
 
 from datasets.dataset_utils import (
-    create_example, strip_punctuation, write_to_file)
+    create_example,
+    strip_punctuation,
+    write_to_file,
+)
 
 SENTENCE = "sentence"
 QUESTION = "question"
@@ -19,8 +22,12 @@ START_INDEX = "answer_start"
 END_INDEX = "answer_end"
 
 FEATURE_NAMES = [
-    SENTENCE, QUESTION, ANSWER, QUESTION_WORTHY_LABEL,
-    START_INDEX, END_INDEX
+    SENTENCE,
+    QUESTION,
+    ANSWER,
+    QUESTION_WORTHY_LABEL,
+    START_INDEX,
+    END_INDEX,
 ]
 
 
@@ -41,7 +48,7 @@ def get_question_sentence_tuples(paragraph_data):
         sll = len(sl)
         for ind in (i for i, e in enumerate(l) if e == sl[0]):
             if l[ind: ind + sll] == sl:
-                return (ind, ind+sll)
+                return (ind, ind + sll)
         return None
 
     context = paragraph_data["context"]
@@ -57,8 +64,10 @@ def get_question_sentence_tuples(paragraph_data):
                 answer_idx = answer["answer_start"]
                 ans_text = answer["text"]
                 split_ans = [strip_punctuation(a) for a in ans_text.split()]
-                if (sentence_idx[i] <= answer_idx and
-                        sentence_idx[i] + len(sent) > answer_idx):
+                if (
+                    sentence_idx[i] <= answer_idx
+                    and sentence_idx[i] + len(sent) > answer_idx
+                ):
                     question_worthy = True
                     ans_range = _find_sub_list(split_ans, split_sent)
                     if ans_range:
@@ -68,6 +77,7 @@ def get_question_sentence_tuples(paragraph_data):
                         yield (sent, question, ans_text, 1, -1, -1)
         if not question_worthy:
             yield (sent, "", "", 0, -1, -1)
+
 
 def _write_tf_records(args):
     with open(args.input_file) as f:
@@ -80,8 +90,8 @@ def _write_tf_records(args):
     # Number of examples where an exact match couldn't find an answer.
     # Needs a fix soon.
     num_no_ans = 0
-    for wiki_page in json_data['data']:
-        for para_data in wiki_page['paragraphs']:
+    for wiki_page in json_data["data"]:
+        for para_data in wiki_page["paragraphs"]:
             data_tuples = get_question_sentence_tuples(para_data)
             for tup in data_tuples:
                 tf_example = create_example(tup, FEATURE_NAMES)
@@ -95,26 +105,30 @@ def _write_tf_records(args):
                 total_examples += 1
     tf.logging.info("Total Number of Examples: %d" % total_examples)
     tf.logging.info(
-        "Number of Question-Worthy Sentence Examples: %d" % num_qn_worthy)
-    tf.logging.info(
-        "Number of Question-Unworthy Sentence Examples: %d" %
-        (total_examples - num_qn_worthy)
+        "Number of Question-Worthy Sentence Examples: %d" % num_qn_worthy
     )
     tf.logging.info(
-        "Examples where an exact string match couldn't find an answer: %d" %
-        (num_no_ans))
-    pos_bound = int(0.9*(len(pos_examples)))
-    neg_bound = int(0.9*(len(neg_examples)))
+        "Number of Question-Unworthy Sentence Examples: %d"
+        % (total_examples - num_qn_worthy)
+    )
+    tf.logging.info(
+        "Examples where an exact string match couldn't find an answer: %d"
+        % (num_no_ans)
+    )
+    pos_bound = int(0.9 * (len(pos_examples)))
+    neg_bound = int(0.9 * (len(neg_examples)))
     train_examples = pos_examples[:pos_bound] + neg_examples[:neg_bound]
     print(len(train_examples))
     test_examples = pos_examples[pos_bound:] + neg_examples[neg_bound:]
     shuffle(train_examples)
     write_to_file(
-        train_examples, os.path.join(args.output_path, "train.tfrecords"))
+        train_examples, os.path.join(args.output_path, "train.tfrecords")
+    )
     shuffle(test_examples)
     print(len(test_examples))
     write_to_file(
-        test_examples, os.path.join(args.output_path, "test.tfrecords"))
+        test_examples, os.path.join(args.output_path, "test.tfrecords")
+    )
 
 
 if __name__ == "__main__":
@@ -123,20 +137,27 @@ if __name__ == "__main__":
     parser.add_argument(
         "--input_file",
         required=True,
-        help="Location of json file containing squad data.")
+        help="Location of json file containing squad data.",
+    )
 
     parser.add_argument(
         "--output_path",
         required=True,
-        help=("Path of file to output tfrecords to. path/test.tfrecords"
-              " and path/train.tfrecords"))
+        help=(
+            "Path of file to output tfrecords to. path/test.tfrecords"
+            " and path/train.tfrecords"
+        ),
+    )
 
     parser.add_argument(
-        "--train_split", default=0.8,
-        help=("Percentage of records to go into the train file."
-              "Remainder goes to test file.")
+        "--train_split",
+        default=0.8,
+        help=(
+            "Percentage of records to go into the train file."
+            "Remainder goes to test file."
+        ),
     )
-    
+
     parser.add_argument
     args = parser.parse_args()
     _write_tf_records(args)

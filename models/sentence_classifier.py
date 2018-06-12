@@ -2,10 +2,10 @@
 import tensorflow as tf
 import tensorflow_hub as hub
 
-from models.base_model import BaseModel, Mode
-
-PREDICTION_SIGNATURE = "prediction"
+# Constants to be used for saving/serving.
 SENTENCE_SIGNATURE = "sentence"
+PREDICTION_SIGNATURE = "predictions"
+
 
 class HParams(tf.contrib.training.HParams):
     train_records = None
@@ -17,105 +17,111 @@ class HParams(tf.contrib.training.HParams):
     hidden_size = None
     num_classes = None
     compression_type = None
+    is_test = None
 
-class SentenceClassifier(BaseModel):
 
-    def build_model(self):
-        """Build graph."""
-        self.global_step = tf.train.get_or_create_global_step()
-        if self._mode != Mode.INFERENCE:
-            sentences, labels = self._read_data()
-            tf.summary.text("input_sentences", sentences)
-        else:
-            sentences = tf.placeholder(
-                dtype=tf.string, shape=[None],
-                name=SENTENCE_SIGNATURE)
-        sentence_encoder = self._hub_module
-        embedded_sentences = sentence_encoder(sentences)
-        tf.summary.histogram("embedded", embedded_sentences)
-        # embedded_sentences = tf.layers.dropout(
-        #     embedded_sentences, training=self._mode==Mode.TRAIN) 
-        embedded_sentences = tf.layers.dense(
-            embedded_sentences, self._hparams.hidden_size,
-            activation=tf.tanh
-        )
-        logits = tf.layers.dense(
-            embedded_sentences, self._hparams.num_classes
-        )
-        if self._mode != Mode.INFERENCE:
-            self.loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-                labels=labels, logits=logits)
-            self.loss = tf.reduce_mean(self.loss, axis=0)
-            tf.summary.scalar("loss", self.loss)
-        if self._mode != Mode.TRAIN:
-            self._predictions = tf.argmax(logits, axis=1)
-            tf.identity(self._predictions, name=PREDICTION_SIGNATURE)
-        if self._mode == Mode.TRAIN:
-            opt = tf.train.AdamOptimizer(
-                learning_rate=0.0005)
-            self.train_op = opt.minimize(
-                self.loss, self.global_step)
-        elif self._mode == Mode.EVAL:
-            self.metrics = {}
-            self.metrics["accuracy"] = tf.metrics.accuracy(
-                labels=labels,
-                predictions=self._predictions)
-            self.metrics["majority"] = tf.metrics.mean(
-                values=labels
-            )
-            self.metrics["recall"] = tf.metrics.recall(
-                labels=labels,
-                predictions=self._predictions)
-            self.metrics["precision"] = tf.metrics.precision(
-                labels=labels,
-                predictions=self._predictions)
-            self.metrics["average"] = tf.metrics.mean(
-                values=self._predictions
-            )
-            metric_variables = tf.get_collection(
-                tf.GraphKeys.LOCAL_VARIABLES)
-            self.metrics_init_op = tf.variables_initializer(
-                metric_variables)
-        self.variable_init_op = [tf.global_variables_initializer(),
-                                 tf.tables_initializer()]
-        self.summary_op = tf.summary.merge_all()
-        self.saver = tf.train.Saver()
+def input_fn(params, mode):
+    """Load and return dataset of batched examples.
 
-    def _read_data(self):
-        feature_spec = {
-            self._hparams.sentence_feature: tf.FixedLenFeature(
-                [], tf.string),
-            self._hparams.label_feature: tf.FixedLenFeature(
-                [], tf.int64
-            )
+     Args:
+         params: hyperparameters that the fn can depend on.
+         mode: can process data differently for training, eval or
+             inference according to mode.
+    """
+
+    def serving_input_receiver_fn():
+        """Function for exported serving model"""
+        inputs = {
+            SENTENCE_SIGNATURE: tf.placeholder(shape=[None], dtype=tf.string)
         }
-        def _parse_fn(example_proto):
-            parsed = tf.parse_single_example(example_proto, feature_spec)
-            return [parsed[self._hparams.sentence_feature],
-                    parsed[self._hparams.label_feature]]
-        batch_size = self._hparams.eval_batch_size
-        file_patterns = self._hparams.eval_records
-        if self._mode == Mode.TRAIN:
-            batch_size = self._hparams.train_batch_size
-            file_patterns = self._hparams.train_records
+        return tf.estimator.export.ServingInputReceiver(inputs, inputs)
+
+    if mode == tf.estimator.ModeKeys.PREDICT:
+        return serving_input_receiver_fn
+
+    feature_spec = {
+        params.sentence_feature: tf.FixedLenFeature([], tf.string),
+        params.label_feature: tf.FixedLenFeature([], tf.int64),
+    }
+
+    def _parse_fn(example_proto):
+        parsed = tf.parse_single_example(example_proto, feature_spec)
+        parsed[SENTENCE_SIGNATURE] = parsed.pop(params.sentence_feature)
+        return parsed, parsed[params.label_feature]
+
+    def input_fn_callable():
+        batch_size = params.eval_batch_size
+        file_patterns = params.eval_records
+        if mode == tf.estimator.ModeKeys.TRAIN:
+            batch_size = params.train_batch_size
+            file_patterns = params.train_records
         dataset = tf.data.TFRecordDataset(
             tf.gfile.Glob(file_patterns),
-            compression_type=self._hparams.compression_type)
+            compression_type=params.compression_type,
+        )
         dataset = dataset.map(_parse_fn)
         dataset = dataset.shuffle(buffer_size=500 * batch_size)
         dataset = dataset.repeat().batch(batch_size)
         return dataset.make_one_shot_iterator().get_next()
 
-    @classmethod
-    def export_model(cls, hparams, checkpoint, builder):
-        with tf.Session(graph=tf.Graph()) as sess:
-            hub_module = hub.Module(
-                "https://tfhub.dev/google/universal-sentence-encoder/1")
-            inference_model = cls(hparams, Mode.INFERENCE, hub_module)
-            inference_model.build_model()
-            inference_model.saver.restore(sess, checkpoint)
-            sess.run(tf.tables_initializer())
-            builder.add_meta_graph_and_variables(
-                sess, ["inference"],
-                legacy_init_op=tf.tables_initializer())
-            builder.save()
+    return input_fn_callable
+
+
+def model_fn(features, labels, mode, params):
+    """ Defines how to train, evaluate and predict from model.
+    Refer to: https://www.tensorflow.org/get_started/premade_estimators
+    """
+    loss, train_op, metrics, predictions, export_outputs = [None] * 5
+    if params.is_test:
+        embedded_sentences = tf.random_uniform(
+            [tf.shape(features[SENTENCE_SIGNATURE])[0], 256]
+        )
+    else:
+        sentence_encoder = hub.Module(
+            "https://tfhub.dev/google/universal-sentence-encoder/2"
+        )
+        sentences = features[SENTENCE_SIGNATURE]
+        embedded_sentences = sentence_encoder(sentences)
+    tf.summary.histogram("embedded", embedded_sentences)
+    embedded_sentences = tf.layers.dense(
+        embedded_sentences, params.hidden_size, activation=tf.tanh
+    )
+    logits = tf.layers.dense(embedded_sentences, params.num_classes)
+    if mode != tf.estimator.ModeKeys.PREDICT:
+        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+            labels=labels, logits=logits
+        )
+        loss = tf.reduce_mean(loss, axis=0)
+        tf.summary.scalar("loss", loss)
+    if mode != tf.estimator.ModeKeys.TRAIN:
+        predictions = tf.argmax(logits, axis=1)
+    if mode == tf.estimator.ModeKeys.TRAIN:
+        opt = tf.train.AdamOptimizer(learning_rate=0.0005)
+        train_op = opt.minimize(loss, global_step=tf.train.get_global_step())
+    elif mode == tf.estimator.ModeKeys.EVAL:
+        metrics = {}
+        metrics["accuracy"] = tf.metrics.accuracy(
+            labels=labels, predictions=predictions
+        )
+        metrics["majority"] = tf.metrics.mean(values=labels)
+        metrics["recall"] = tf.metrics.recall(
+            labels=labels, predictions=predictions
+        )
+        metrics["precision"] = tf.metrics.precision(
+            labels=labels, predictions=predictions
+        )
+        metrics["average"] = tf.metrics.mean(values=predictions)
+    elif mode == tf.estimator.ModeKeys.PREDICT:
+        export_outputs = {
+            PREDICTION_SIGNATURE: tf.estimator.export.PredictOutput(
+                {PREDICTION_SIGNATURE: predictions}
+            )
+        }
+    return tf.estimator.EstimatorSpec(
+        mode=mode,
+        predictions=predictions,
+        loss=loss,
+        train_op=train_op,
+        eval_metric_ops=metrics,
+        export_outputs=export_outputs,
+    )

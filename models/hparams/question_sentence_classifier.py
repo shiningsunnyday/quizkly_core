@@ -8,5 +8,5 @@ baseline = HParams(
     train_batch_size=100,
     eval_batch_size=100,
     hidden_size=512,
-    num_classes=2
+    num_classes=2,
 )

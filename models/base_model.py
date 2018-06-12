@@ -4,6 +4,7 @@ from enum import Enum
 
 class Mode(Enum):
     """Enum class """
+
     TRAIN = 1
     EVAL = 2
     INFERENCE = 3
@@ -25,6 +26,7 @@ class BaseModel(object):
         summary_op: op for tensorboard summary.
         train_op: op for training, if mode is TRAIN.
     """
+
     def __init__(self, hparams, mode, hub_module=None):
         """
         Creates a model.

@@ -23,19 +23,17 @@ def create_example(values, names):
             tf_features[names[i]] = int64_feature(val)
         elif isinstance(val, str):
             tf_features[names[i]] = bytes_feature(val.encode("utf-8"))
-    return tf.train.Example(
-        features=tf.train.Features(feature=tf_features)
-    )
+    return tf.train.Example(features=tf.train.Features(feature=tf_features))
 
 
 def strip_punctuation(s):
     """Strips punctuation from text."""
-    return re.sub('['+string.punctuation+']', '', s)
+    return re.sub("[" + string.punctuation + "]", "", s)
+
 
 def write_to_file(examples, filepath):
     """Writes serialized examples to filepath"""
-    tfrecord_writer = tf.python_io.TFRecordWriter(
-        filepath)
+    tfrecord_writer = tf.python_io.TFRecordWriter(filepath)
     for ex in examples:
         tfrecord_writer.write(ex.SerializeToString())
     tfrecord_writer.close()
