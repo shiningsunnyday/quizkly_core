@@ -23,6 +23,8 @@ def create_example(values, names):
             tf_features[names[i]] = int64_feature(val)
         elif isinstance(val, str):
             tf_features[names[i]] = bytes_feature(val.encode("utf-8"))
+        elif isinstance(val, bytes):
+            tf_features[names[i]] = bytes_feature(val)
     return tf.train.Example(features=tf.train.Features(feature=tf_features))
 
 

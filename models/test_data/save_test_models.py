@@ -5,8 +5,10 @@ import tempfile
 
 import tensorflow as tf
 
-from models import sentence_classifier
-from models.sentence_classifier import HParams
+from models import sentence_classifier, pointer_network
+from models.binary_gap_classifier import train_model
+from models.sentence_classifier import HParams as SentHParams
+from models.pointer_network import HParams as PtrHParams
 
 
 def save_model(hparams, model, saved_model_dir):
@@ -35,18 +37,47 @@ def save_model(hparams, model, saved_model_dir):
 
 
 def save_sentence_classifier():
-    hparams = HParams(
+    hparams = SentHParams(
         train_records="datasets/testdata/*.tfrecords",
         train_batch_size=2,
         sentence_feature="sentence",
         label_feature="question_worthy",
         hidden_size=2,
         num_classes=2,
+        learning_rate=0.02,
         is_test=True,
     )
     saved_model_dir = path.join("models", "test_data", "sentence_classifier")
     save_model(hparams, sentence_classifier, saved_model_dir)
 
 
+def save_pointer_net():
+    hparams = PtrHParams(
+        train_records="datasets/testdata/*.tfrecords",
+        train_batch_size=2,
+        sentence_feature="sentence",
+        start_label_feature="answer_start",
+        end_label_feature="answer_end",
+        sentence_length_feature="sentence_length",
+        hidden_size=2,
+        dropout_keep_prob=0.5,
+        learning_rate=0.002,
+        is_test=True,
+    )
+    saved_model_dir = path.join("models", "test_data", "pointer_network")
+    save_model(hparams, pointer_network, saved_model_dir)
+
+
+def save_binary_gap_classifier():
+    hparams = tf.contrib.training.HParams(
+        learning_rate=0.9, hidden_size=100, encoding_dim=3
+    )
+    saved_model_path = path.join("models", "test_data", "gap_classifier.h5")
+    train_model(
+        hparams, "datasets/testdata/question_candidates_test", saved_model_path
+    )
+
+
 if __name__ == "__main__":
     save_sentence_classifier()
+    save_binary_gap_classifier()

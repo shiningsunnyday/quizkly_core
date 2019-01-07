@@ -1,0 +1,6 @@
+[flake8]
+max-complexity = 15
+exclude =
+    .git,
+    proto,
+    *env*,

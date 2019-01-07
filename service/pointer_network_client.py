@@ -1,10 +1,14 @@
 """ Client for running sentence selector """
 import tensorflow as tf
 
-from models.sentence_classifier import SENTENCE_SIGNATURE, PREDICTION_SIGNATURE
+from models.pointer_network import (
+    SENTENCE_SIGNATURE,
+    START_PREDICTION_SIGNATURE,
+    END_PREDICTION_SIGNATURE,
+)
 
 
-class SentenceClassifierClient(object):
+class PointerNetworkClient(object):
     """ Class to run sentence classifier model"""
 
     def __init__(self, model_dir):
@@ -16,4 +20,7 @@ class SentenceClassifierClient(object):
             sentences: list of strings.
         """
         output_dict = self._predictor({SENTENCE_SIGNATURE: sentences})
-        return output_dict[PREDICTION_SIGNATURE]
+        return (
+            output_dict[START_PREDICTION_SIGNATURE],
+            output_dict[END_PREDICTION_SIGNATURE],
+        )
