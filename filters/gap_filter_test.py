@@ -38,8 +38,11 @@ class TestFilterGaps(unittest.TestCase):
 
     def test_back_off_phrase(self):
         # TODO: WRITE A PROPER TEST @girish
-        backoff_phrase("the National Library")
-        return
+        self.assertEqual(
+            # to New York
+            backoff_phrase(GAP_DATA_CONTAINER.docs[1][3:6]),
+            GAP_DATA_CONTAINER.docs[1][4:6]
+        )
 
 
 if __name__ == "__main__":

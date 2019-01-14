@@ -5,14 +5,15 @@ import itertools
 from operator import itemgetter
 
 from nltk import stem
-from nltk.corpus import stopwords
 from nltk.corpus import wordnet as wn
+from spacy.lang.en.stop_words import STOP_WORDS
 
 
 # Converts spacy part of speech tags to wordnet's format.
 POS_TO_WN = {
     "ADV": wn.ADV, "VERB": wn.VERB,
-    "ADJ": wn.ADJ, "NOUN": wn.NOUN
+    "ADJ": wn.ADJ, "NOUN": wn.NOUN,
+    "PROPN": wn.NOUN
 }
 PUNC_REGEX = re.compile('[%s]' % re.escape(string.punctuation))
 
@@ -20,6 +21,16 @@ PUNC_REGEX = re.compile('[%s]' % re.escape(string.punctuation))
 def filter_distractors(question_candidates, spacy_docs, parser,
                        word_model, num_dists=4):
     """
+    Finds distractors from given word2vec model for question candidates.
+
+    Args:
+        question_candidate: QuestionCandidate proto
+        spacy_doc: spacy doc
+        parser: spacy parser
+        word_model: word2vec model
+        num_dists: number of distractors
+    Returns:
+        list of distractor strings.
     """
 
     stemmer = stem.snowball.SnowballStemmer("english")
@@ -33,34 +44,29 @@ def filter_distractors(question_candidates, spacy_docs, parser,
 def filter_distractors_single(question_candidate, spacy_doc, parser,
                               word_model, stemmer, num_dists=4):
     """
-    Filters distractors from given word2vce model.
+    Finds distractors from given word2vec model for one question_candidate.
 
     Args:
         question_candidate: QuestionCandidate proto
         spacy_doc: spacy doc
         parser: spacy parser
         word_model: word2vec model
+        stemmer: nltk stemmer
         num_dists: number of distractors
     Returns:
         list of distractor strings.
     """
     gap = question_candidate.gap
     question = question_candidate.question_sentence
-    distractors = nearest_neighbors(
-        gap, word_model, num_dists*10)
-    distractors = filter_words_in_sent(
-        question, distractors)
+    distractors = nearest_neighbors(gap, word_model, num_dists * 10)
+    distractors = filter_words_in_sent(question, distractors, stemmer)
     distractors = filter_stopword(distractors)
-    distractors = filter_part_of_speech(
-        gap, distractors, parser)
+    distractors = filter_part_of_speech(gap, distractors, parser)
     distractors = filter_wordnet(gap, distractors, stemmer)
     distractors = rescore(word_model, spacy_doc, distractors, gap)
-    gap_syn = wn.synsets(
-        gap.text.replace(' ', '_'),
-        POS_TO_WN[gap.pos_tags[-1]])
-    distractors = filter_duplicates(distractors, gap, gap_syn)
     final_distractors = [d[0] for d in distractors[:num_dists]]
-    final_distractors = post_process(final_distractors, gap)
+    final_distractors = post_process(
+        final_distractors, gap, spacy_doc, stemmer)
     return final_distractors
 
 
@@ -95,9 +101,10 @@ def nearest_neighbors(gap, word_model, topn=20):
         neighbors = neighbors[:topn]
 
     # change underscores back to spaces and remove punctuation.
-    neighbors = [[n[0].split("_", " "), n[1]] for n in neighbors]
+    neighbors = [[n[0].replace("_", " "), n[1]] for n in neighbors]
+    punc_stripper = str.maketrans('', '', string.punctuation)
     neighbors = [
-        [n[0].translate(None, string.punctuation), n[1]]
+        [n[0].translate(punc_stripper), n[1]]
         for n in neighbors
     ]
     # remove empty candidates that might have just been punctuations/spaces.
@@ -124,7 +131,10 @@ def filter_words_in_sent(sentence, distractors, stemmer):
         list of (candidate, score) tuples
     """
 
-    stemmed_sentence = _stem_words(sentence.split(), stemmer)
+    # remove puncs from question
+    punc_stripper = str.maketrans('', '', string.punctuation)
+    sentence = sentence.translate(punc_stripper)
+    stemmed_sentence = _stem_words(stemmer, sentence.split())
     filtered_distractors = []
 
     for pair in distractors:
@@ -160,8 +170,6 @@ def filter_part_of_speech(gap, distractors, parser):
     for dist in distractors:
         tagged = next(tagged_phrases)
         dist_tag = tagged[-1].pos_
-        # we check the first letter of the tag
-        # because we dont care about plurality, etc.
         if ref_tag == dist_tag:
             filtered_distractors.append(dist)
     return filtered_distractors
@@ -178,11 +186,10 @@ def filter_stopword(distractors):
     Returns:
         list of (candidate, score) tuples
     """
-    stoplist = set(stopwords.words('english'))
     filtered_distractors = []
     for pair in distractors:
         phrase = pair[0].split(" ")
-        phrase = [w for w in phrase if w not in stoplist]
+        phrase = [w for w in phrase if w not in STOP_WORDS]
         if len(phrase) <= 0:
             continue
         filtered_distractors.append([" ".join(phrase), pair[1]])
@@ -209,12 +216,11 @@ def filter_wordnet(gap, distractors, stemmer):
 
     # filtering by wordnet similarity
     candidates = filter_wordnetsim(candidates, gap_syn)
-
     # filtering meronyms and hyponyms
     candidates = filter_hypomeronyms(
         candidates, gap, gap_syn, gap_hypomeronyms, stemmer)
-
-    return zip(*candidates)[0]
+    candidates = filter_duplicates(candidates, gap, gap_syn, stemmer)
+    return list(zip(*candidates))[1]
 
 
 def _prep_wordnet_synsets(gap, distractors):
@@ -291,37 +297,39 @@ def filter_wordnetsim(distractors, gap_syn, thres=0.1):
     return filtered_distractors
 
 
-def _check_hypomeronym(gap, dist, stemmer, gap_hypomeronyms=None):
+def _check_hypomeronym(gap, dist, gap_hypomeronyms, stemmer):
     """
     Check if the dist is a hyponym or meronym of gap.
+
+    Args:
+        gap: (string, synset) tuple of gap
+        dist: (string, sysnset) tuple of distractor
+        gap_hypomeronym: hyponyms and meronyms of the gap from wordnet.
+        stemmer: nltk stemmer
+
+    Returns:
+        boolean.
     """
-    g_str, g_sn, d_str, d_sn = gap[0], gap[1], dist[0], dist[1]
+    g_str, g_syn, d_str, d_syn = gap[0], gap[1], dist[0], dist[1]
     g_str = PUNC_REGEX.sub(' ', g_str)
     d_str = PUNC_REGEX.sub(' ', d_str)
+    # check if the distractor is containing in the gap.
+    # e.g. blood cell is in red blood cell.
     if all([w in d_str.lower() for w in g_str.lower().split(' ')]):
         return True
 
-    d_str_stemmed = _stem_words(d_str.lower().split(' '), stemmer)
-    g_str_stemmed = _stem_words(g_str.lower().split(' '), stemmer)
+    d_str_stemmed = _stem_words(stemmer, d_str.lower().split(' '))
+    g_str_stemmed = _stem_words(stemmer, g_str.lower().split(' '))
     if all([w in d_str_stemmed for w in g_str_stemmed]):
         return True
 
-    if not(g_sn is not None and d_sn is not None):
+    if not d_syn or not g_syn:
         return False
 
-    if gap_hypomeronyms is None:
-        gap_hypomeronyms = []
-        for syn in g_sn:
-            gap_hypomeronyms += _get_hypomeronyms(syn)
-
-    if not set(d_sn).isdisjoint(set(gap_hypomeronyms)):
-        return True
-
-    return False
+    return not set(d_syn).isdisjoint(set(gap_hypomeronyms))
 
 
-def filter_hypomeronyms(self, distractors, gap, gap_syn, gap_hypomeronyms,
-                        stemmer):
+def filter_hypomeronyms(distractors, gap, gap_syn, gap_hypomeronyms, stemmer):
     """
     Removes distractors that are hyponyms of the gap.
 
@@ -336,14 +344,13 @@ def filter_hypomeronyms(self, distractors, gap, gap_syn, gap_hypomeronyms,
         list of tuples of form (wn synset, (candidate, score)).
     """
     filtered_distractors = []
-
     for dist in distractors:
         dist_syn, (dist_str, _) = dist
         gap_str, gap_syn = gap.text, gap_syn
 
         same_last_word = (
-            _stem_words(gap_str.split(' ')[-1:]) ==
-            _stem_words(dist_str.split(' ')[-1:])
+            _stem_words(stemmer, gap_str.split(' ')[-1:]) ==
+            _stem_words(stemmer, dist_str.split(' ')[-1:])
         )
         if (len(gap_str.split(' ')) > 1 and
                 len(dist_str.split(' ')) > 1 and same_last_word):
@@ -356,48 +363,80 @@ def filter_hypomeronyms(self, distractors, gap, gap_syn, gap_hypomeronyms,
             gap_hypomeronyms_first = []
             for syn in gap_syn:
                 gap_hypomeronyms_first += _get_hypomeronyms(syn)
-            if _check_hypomeronym([gap_str, gap_syn], [dist_str, dist_syn],
+            if _check_hypomeronym((gap_str, gap_syn), (dist_str, dist_syn),
                                   gap_hypomeronyms_first, stemmer):
                 continue
 
-        if not _check_hypomeronym([gap_str, gap_syn], [dist_str, dist_syn],
-                                  gap_hypomeronyms):
+        if not _check_hypomeronym((gap_str, gap_syn), (dist_str, dist_syn),
+                                  gap_hypomeronyms, stemmer):
             filtered_distractors.append(dist)
-
     return filtered_distractors
 
 
-def filter_duplicates(self, distractors, gap, gap_syn):
+def filter_duplicates(distractors, gap, gap_syn, stemmer):
     """
     Remove distractors which are duplicates of gaps/other distractors
     """
     filtered_distractors = []
-    delete_idx = []
+    delete_idx = set([])
     for i, dist in enumerate(distractors):
         if i in delete_idx:
             continue
 
-        if self.check_duplication([dist[0], dist[2]], [gap.text, gap_syn]):
-            delete_idx.append(i)
+        dist_syn, (dist_str, dist_score) = dist
+        gap_str, gap_syn = gap.text, gap_syn
+
+        if check_duplication((dist_str, dist_syn),
+                             (gap_str, gap_syn), stemmer):
+            delete_idx.add(i)
             continue
 
         for j, dist_check in enumerate(distractors):
-            if i == j:
+            if i == j or j in delete_idx:
                 continue
-            if self.check_duplication([dist[0], dist[2]],
-                                      [dist_check[0], dist_check[2]]):
+            check_syn, (check_str, check_score) = dist_check
+            if check_duplication((dist_str, dist_syn),
+                                 (check_str, check_syn), stemmer):
                 # delete the one with the lower wordvec score
-                if dist[1] > dist_check[1]:
-                    delete_idx.append(j)
+                if dist_score > check_score:
+                    delete_idx.add(j)
                 else:
-                    delete_idx.append(i)
+                    delete_idx.add(i)
                 break
 
     filtered_distractors = [
         dist for i, dist in enumerate(distractors) if i not in delete_idx
     ]
-
     return filtered_distractors
+
+
+def check_duplication(word_x, word_y, stemmer):
+    """
+    Checks duplication by stemming and WordNet.
+
+    Args:
+        word_x: (string, synset tuple)
+        word_y: (string, sysnset tuple)
+
+    Returns:
+        boolean indicating whether of not the words are duplicates.
+    """
+    x_str, x_sn, y_str, y_sn = word_x[0], word_x[1], word_y[0], word_y[1]
+    x_str = PUNC_REGEX.sub(' ', x_str)
+    y_str = PUNC_REGEX.sub(' ', y_str)
+    same_word = (_stem_words(stemmer, x_str.lower().split(' ')) ==
+                 _stem_words(stemmer, y_str.lower().split(' ')))
+
+    if same_word:
+        return True
+
+    if x_sn and y_sn:  # only compare if word has a synset in wordnet
+        same_synset = not set(x_sn).isdisjoint(set(y_sn))
+    else:
+        same_synset = False
+
+    # TODO: add wikipedia trie functionality @girish
+    return same_synset
 
 
 def _dice(word_a, word_b):
@@ -422,13 +461,14 @@ def rescore(word_model, spacy_doc, distractors, gap):
         distractors: list of tuples of form (candidate, score).
         gap: gap to compare to.
     """
-    context_scores = _get_context_scores(spacy_doc, gap, distractors)
+    context_scores = _get_context_scores(
+        word_model, spacy_doc, gap, distractors)
     lex_sim = [_dice(d, gap.text) for d, _ in distractors]
 
     for i, _ in enumerate(distractors):
-        distractors[i][1] = (2.5/6 * distractors[i][1] +
-                             5.0/6 * context_scores[i] +
-                             1.5/6 * lex_sim[i])
+        distractors[i][1] = (1.6/6 * distractors[i][1] +
+                             3.2/6 * context_scores[i] +
+                             1.2/6 * lex_sim[i])
 
     distractors = sorted(distractors, key=itemgetter(1), reverse=True)
     return distractors
@@ -465,19 +505,14 @@ def _get_context_scores(word_model, spacy_doc, gap, distractors):
     return context_scores
 
 
-def _stem(words, stemmer):
-    return _stem(
-        [stemmer.stem(word.lower()) for word in words])
-
-
-def post_process(self, distractors, gap, spacy_doc):
+def post_process(distractors, gap, spacy_doc, stemmer):
     """
     Deals with the capitalising, pos-transformation of gaps
     """
     prev_token, after_token = None, None
     if gap.start_index > 1:
         prev_token = spacy_doc[gap.start_index - 1]
-    if gap.span.end < len(spacy_doc):
+    if gap.end_index < len(spacy_doc):
         after_token = spacy_doc[gap.end_index]
 
     for i, distractor in enumerate(distractors):
@@ -486,9 +521,11 @@ def post_process(self, distractors, gap, spacy_doc):
             distractors[i] = distractor.capitalize()
         distractor_words = distractor.split(' ')
         if (prev_token and
-                _stem(distractor_words[0:1]) == _stem([prev_token.orth_])):
+                _stem_words(stemmer, distractor_words[0:1]) ==
+                _stem_words(stemmer, [prev_token.orth_])):
             distractors[i] = ' '.join(distractor_words[1:])
         if (after_token and
-                _stem(distractor_words[-1:]) == _stem([after_token.orth_])):
+                _stem_words(stemmer, distractor_words[-1:]) ==
+                _stem_words(stemmer, [after_token.orth_])):
             distractors[i] = ' '.join(distractor_words[:-1])
     return distractors

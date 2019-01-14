@@ -25,6 +25,9 @@ class TestPointerNetwork(test_utils.ModelTester):
             is_test=True,
         )
 
+    def test_training_eval(self):
+        pass
+
 
 if __name__ == "__main__":
     tf.test.main()
