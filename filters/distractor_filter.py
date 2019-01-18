@@ -1,20 +1,23 @@
 """ Functions to choose distractors for a chosen gap."""
+import collections
+import itertools
 import re
 import string
-import itertools
 from operator import itemgetter
 
 from nltk import stem
 from nltk.corpus import wordnet as wn
 from spacy.lang.en.stop_words import STOP_WORDS
 
+from proto import question_candidate_pb2
 
 # Converts spacy part of speech tags to wordnet's format.
-POS_TO_WN = {
-    "ADV": wn.ADV, "VERB": wn.VERB,
+POS_TO_WN = collections.defaultdict(
+    lambda: wn.NOUN,
+    {"ADV": wn.ADV, "VERB": wn.VERB,
     "ADJ": wn.ADJ, "NOUN": wn.NOUN,
     "PROPN": wn.NOUN
-}
+})
 PUNC_REGEX = re.compile('[%s]' % re.escape(string.punctuation))
 
 
@@ -59,6 +62,8 @@ def filter_distractors_single(question_candidate, spacy_doc, parser,
     gap = question_candidate.gap
     question = question_candidate.question_sentence
     distractors = nearest_neighbors(gap, word_model, num_dists * 10)
+    if not distractors:
+        return []
     distractors = filter_words_in_sent(question, distractors, stemmer)
     distractors = filter_stopword(distractors)
     distractors = filter_part_of_speech(gap, distractors, parser)
@@ -67,6 +72,10 @@ def filter_distractors_single(question_candidate, spacy_doc, parser,
     final_distractors = [d[0] for d in distractors[:num_dists]]
     final_distractors = post_process(
         final_distractors, gap, spacy_doc, stemmer)
+    question_candidate.distractors.extend(
+        [question_candidate_pb2.Distractor(text=dist)
+         for dist in final_distractors]
+    )
     return final_distractors
 
 
@@ -85,20 +94,28 @@ def nearest_neighbors(gap, word_model, topn=20):
     """
     # n-grams are separated by underscores in the word model.
     phrase = gap.text.replace(' ', '_')
-    neighbors = word_model.most_similar_cosmul(
-        positive=[phrase], topn=topn)
+    neighbors = []
+
+    try:
+        neighbors.extend(word_model.most_similar_cosmul(
+            positive=[phrase], topn=topn))
+    except KeyError:
+        pass
 
     # Try to get more candidates using lowercase.
     # check that second char is lower-case to account
     # for terms like DNA, etc.
     if phrase[0].isupper() and phrase[1].islower():
         phrase_low = phrase.lower()
-        neighbors.extend(
+        try:
+            neighbors.extend(
             word_model.most_similar_cosmul(
                 positive=[phrase_low], topn=topn)
-        )
-        neighbors.sort(key=lambda x: x[1], reverse=True)
-        neighbors = neighbors[:topn]
+            )
+            neighbors.sort(key=lambda x: x[1], reverse=True)
+            neighbors = neighbors[:topn]
+        except KeyError:
+            pass
 
     # change underscores back to spaces and remove punctuation.
     neighbors = [[n[0].replace("_", " "), n[1]] for n in neighbors]

@@ -112,11 +112,12 @@ if __name__ == "__main__":
     tf.logging.set_verbosity(tf.logging.INFO)
     tf.set_random_seed(230)
     args = parser.parse_args()
-
+    
+    warm_start_from = None
     if os.path.isdir(args.model_dir):
         warm_start_from = args.model_dir
 
-    if args.restore_dir:  # and os.path.isdir(args.restore_dir):
+    if args.restore_dir and os.path.isdir(args.restore_dir):
         warm_start_from = args.restore_dir
 
     run_config = tf.estimator.RunConfig(
