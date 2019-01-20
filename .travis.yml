@@ -8,7 +8,7 @@ install:
 before_script:
   - wget https://github.com/google/protobuf/releases/download/v3.2.0/protoc-3.2.0-linux-x86_64.zip
   - unzip protoc-3.2.0-linux-x86_64.zip -d protoc3
-  - export PATH=$PATH:$PWD/protoc3/bin/
+  - export PATH=$PATH:$PWD/protoc3/bin
   - chmod +x build.sh && ./build.sh
 script:
   - chmod +x test.sh && ./test.sh
