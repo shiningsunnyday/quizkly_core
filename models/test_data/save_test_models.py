@@ -96,6 +96,7 @@ def save_word2vec_model():
 
 
 if __name__ == "__main__":
+    save_pointer_net()
     save_sentence_classifier()
     save_binary_gap_classifier()
     save_word2vec_model()

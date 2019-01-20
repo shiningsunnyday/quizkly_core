@@ -13,7 +13,7 @@ echo "Building test models."
 python -m models.test_data.save_test_models
 
 echo "Downloading sentence tokenizer data."
-python -m nltk.downloader punkt
+python -m nltk.downloader punkt 
 
 echo "Downloading wordnet."
-python -m nltk.downloader punkt
+python -m nltk.downloader wordnet
