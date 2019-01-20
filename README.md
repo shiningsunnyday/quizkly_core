@@ -12,4 +12,4 @@
 Install protobuf with `brew install protobuf`\
 Install required libraries with `pip install -r requirements.txt`\
 Build protos and test models/data with `./build.sh`\
-Check that all tests pass with `./test.sh`\
+Check that all tests pass with `./test.sh`
