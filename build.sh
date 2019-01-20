@@ -17,3 +17,6 @@ python -m nltk.downloader punkt
 
 echo "Downloading wordnet."
 python -m nltk.downloader wordnet
+
+echo "Downloading spacy models"
+python -m spacy download en_core_web_md
