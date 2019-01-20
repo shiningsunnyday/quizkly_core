@@ -35,7 +35,8 @@ def _main():
     predictions = []
     i = 0
     while i < len(lines):
-        predictions.extend(client.predict(lines[i: i + _FLAGS.batch_size]))
+        predictions.extend(
+            client.predict(lines[i: i + _FLAGS.batch_size]))
         i += _FLAGS.batch_size
     print("Writing to output file...")
     output_file = _FLAGS.output_file or _FLAGS.input_file

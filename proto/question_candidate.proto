@@ -1,0 +1,62 @@
+// Protobuf for storing question candidates.
+
+syntax = "proto3";
+
+
+message QuestionCandidate {
+    
+    // Sentence from which gaps/distractors are chosen.
+	string question_sentence = 1;
+    
+    // List of possible gaps.
+	repeated Gap gap_candidates = 2;
+    
+    // Final chosen gap.
+	Gap gap = 4;
+    
+    // List of distractors ranked by confidence.
+	repeated Distractor distractors = 3;
+
+}
+
+message Gap {
+    
+    // Text of the gap.
+    string text = 1;
+
+    int32 start_index = 2;
+
+    int32 end_index = 3;
+    
+    // Type indicating whether gap is good or bad.
+	enum GapType {
+	    UNKNOWN = 0;
+	    NEGATIVE = 1;  // Good gap
+	    POSITIVE = 2;  // Bad Gap
+	}
+    
+    // Label predicted by classifier.
+	GapType predicted_label = 4;
+    
+    // A float between 0 and 1 indicating how confident a classifier is
+    // that predicted_label == POSITIVE.
+	float confidence = 5;
+
+    // Label, if proto is used for training.
+    GapType train_label = 6;
+    
+    // Embedding vector used for classifier training/inference.
+    repeated float embedding = 7;
+
+    // list of strings containing pos tag of each word.
+    // https://spacy.io/api/annotation#pos-tagging
+    repeated string pos_tags = 8; 
+
+}
+
+message Distractor {
+
+    // Text of the distractor.
+    string text = 1;
+	
+}

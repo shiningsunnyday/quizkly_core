@@ -3,7 +3,7 @@ import json
 import re
 import unittest
 
-from create_squad_records import get_question_sentence_tuples
+from datasets.create_squad_records import get_question_sentence_tuples
 
 
 class TestCreateSquadRecords(unittest.TestCase):
@@ -33,20 +33,29 @@ class TestCreateSquadRecords(unittest.TestCase):
                          He hated bad people."
             }
         """
-        test_json_str = re.sub("\s\s+", " ", test_json_str)
+        test_json_str = re.sub(r"\s\s+", " ", test_json_str)
         cls.squad_data = json.loads(test_json_str)
 
     def test_get_question_sentence_tuples(self):
         expected_data_tuples = [
-            ("Obama was president.", "Who was Obama?", "president", 1, 2, 3),
-            ("He was popular.", "", "", 0, -1, -1),
+            (
+                "Obama was president.",
+                "Who was Obama?",
+                "president",
+                1,
+                2,
+                2,
+                3,
+            ),
+            ("He was popular.", "", "", 0, -1, -1, 3),
             (
                 "Washington DC was where he was.",
                 "Where was Obama?",
                 "Washington DC",
                 1,
                 0,
-                2,
+                1,
+                6,
             ),
             (
                 "He married Michelle in 1920.",
@@ -54,9 +63,10 @@ class TestCreateSquadRecords(unittest.TestCase):
                 "Michelle",
                 1,
                 2,
-                3,
+                2,
+                5,
             ),
-            ("He hated bad people.", "", "", 0, -1, -1),
+            ("He hated bad people.", "", "", 0, -1, -1, 4),
         ]
         self.assertListEqual(
             list(get_question_sentence_tuples(self.squad_data)),

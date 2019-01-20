@@ -105,6 +105,7 @@ def train_eval_model(
         throttle_secs=eval_throttle_secs,
     )
     tf.estimator.train_and_evaluate(estimator, train_spec, eval_spec)
+    return estimator
 
 
 if __name__ == "__main__":
@@ -112,14 +113,13 @@ if __name__ == "__main__":
     tf.set_random_seed(230)
     args = parser.parse_args()
 
-    # Check that we are not overwriting some previous experiment
+    warm_start_from = None
     if os.path.isdir(args.model_dir):
         warm_start_from = args.model_dir
 
     if args.restore_dir and os.path.isdir(args.restore_dir):
         warm_start_from = args.restore_dir
 
-    warm_start_from = None
     run_config = tf.estimator.RunConfig(
         model_dir=args.model_dir,
         save_summary_steps=args.save_summary_steps,
@@ -129,7 +129,7 @@ if __name__ == "__main__":
 
     _Model = importlib.import_module(args.model_class)
     hparams = get_attribute_from_path(args.hparams_class)
-    train_eval_model(
+    estimator = train_eval_model(
         hparams,
         _Model.model_fn,
         _Model.input_fn,
@@ -138,4 +138,10 @@ if __name__ == "__main__":
         eval_steps=args.num_eval_steps,
         eval_throttle_secs=args.save_checkpoints_secs or 240,
         warm_start_from=warm_start_from,
+    )
+    estimator.export_savedmodel(
+        export_dir_base=args.model_dir,
+        serving_input_receiver_fn=_Model.input_fn(
+            hparams, tf.estimator.ModeKeys.PREDICT
+        ),
     )

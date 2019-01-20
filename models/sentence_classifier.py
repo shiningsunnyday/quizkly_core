@@ -18,6 +18,7 @@ class HParams(tf.contrib.training.HParams):
     num_classes = None
     compression_type = None
     is_test = None
+    learning_rate = None
 
 
 def input_fn(params, mode):
@@ -96,7 +97,7 @@ def model_fn(features, labels, mode, params):
     if mode != tf.estimator.ModeKeys.TRAIN:
         predictions = tf.argmax(logits, axis=1)
     if mode == tf.estimator.ModeKeys.TRAIN:
-        opt = tf.train.AdamOptimizer(learning_rate=0.0005)
+        opt = tf.train.AdamOptimizer(learning_rate=params.learning_rate)
         train_op = opt.minimize(loss, global_step=tf.train.get_global_step())
     elif mode == tf.estimator.ModeKeys.EVAL:
         metrics = {}

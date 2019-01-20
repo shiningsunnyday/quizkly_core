@@ -19,6 +19,7 @@ class TestSentenceClassifier(test_utils.ModelTester):
             eval_batch_size=3,
             hidden_size=5,
             num_classes=2,
+            learning_rate=0.005,
             is_test=True,
         )
 

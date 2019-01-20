@@ -10,10 +10,6 @@ class SentenceClassifierClient(object):
     def __init__(self, model_dir):
         self._predictor = tf.contrib.predictor.from_saved_model(model_dir)
 
-    # def stop(self):
-    #     """Frees up the resources used by the client."""
-    #     self._session.close()
-
     def predict(self, sentences):
         """Serves predictions for given sentences
         Args:
