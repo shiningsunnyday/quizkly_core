@@ -14,10 +14,12 @@ from proto import question_candidate_pb2
 # Converts spacy part of speech tags to wordnet's format.
 POS_TO_WN = collections.defaultdict(
     lambda: wn.NOUN,
-    {"ADV": wn.ADV, "VERB": wn.VERB,
-    "ADJ": wn.ADJ, "NOUN": wn.NOUN,
-    "PROPN": wn.NOUN
-})
+    {
+        "ADV": wn.ADV, "VERB": wn.VERB,
+        "ADJ": wn.ADJ, "NOUN": wn.NOUN,
+        "PROPN": wn.NOUN
+    }
+)
 PUNC_REGEX = re.compile('[%s]' % re.escape(string.punctuation))
 
 
@@ -109,8 +111,8 @@ def nearest_neighbors(gap, word_model, topn=20):
         phrase_low = phrase.lower()
         try:
             neighbors.extend(
-            word_model.most_similar_cosmul(
-                positive=[phrase_low], topn=topn)
+                word_model.most_similar_cosmul(
+                    positive=[phrase_low], topn=topn)
             )
             neighbors.sort(key=lambda x: x[1], reverse=True)
             neighbors = neighbors[:topn]

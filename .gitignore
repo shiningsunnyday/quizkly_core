@@ -7,3 +7,4 @@ datasets/testdata/question_candidates_test
 models/test_data/gap_classifier.h5
 models/test_data/pointer_network/
 models/test_data/sentence_classifier
+models/test_data/word_model

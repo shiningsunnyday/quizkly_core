@@ -11,87 +11,89 @@ from service.binary_gap_classifier_client import (
 from service.elmo_client import ElmoClient
 from service.sentence_classifier_client import SentenceClassifierClient
 
-_PARSER = argparse.ArgumentParser()
-_PARSER.add_argument(
-    "--input_file",
-    required=True,
-    help="Location of file with text.",
-)
-_PARSER.add_argument(
-    "--sentence_model",
-    required=True,
-    help="Directory of saved sentence model to use.",
-)
-_PARSER.add_argument(
-    "--gap_model",
-    required=True,
-    help="Directory of saved gap model to use.",
-)
-_PARSER.add_argument(
-    "--word_model",
-    required=True,
-    help="Directory of saved word model to use.",
-)
-_PARSER.add_argument(
-    "--output_file",
-    help="Directory to save sentences with questions.",
-)
-_PARSER.add_argument(
-    "--batch_size",
-    default=100,
-    help="Size of batches to compute predictions for.",
-)
-_FLAGS = _PARSER.parse_args()
 
 class QuestionGenerator(object):
-    def __init__(self, sentence_model_path, gap_model_path, word_model_path):
-        self._sentence_client = SentenceClassifierClient(_FLAGS.sentence_model)
-        self._gap_client = BinaryGapClassifierClient(_FLAGS.gap_model)
-        self._elmo_client = ElmoClient()
+    def __init__(self, sentence_model_path, gap_model_path,
+                 word_model_path, elmo_client):
+        self._sentence_client = SentenceClassifierClient(sentence_model_path)
+        self._gap_client = BinaryGapClassifierClient(gap_model_path)
+        self._elmo_client = elmo_client
         self._word_model = (
             gensim.models.keyedvectors.KeyedVectors.load_word2vec_format(
-                _FLAGS.word_model, binary=True)
+                word_model_path)
         )
-        self._parser = spacy.load("en_core_web_md")
+        self.parser = spacy.load("en_core_web_md")
+
         # Handle spacy bug with stopwords.
-        self._parser.vocab.add_flag(
+        self.parser.vocab.add_flag(
             lambda s: s.lower() in spacy.lang.en.stop_words.STOP_WORDS,
             spacy.attrs.IS_STOP)
 
-    def generate_questions(text, batch_size=50):
+    def generate_questions(self, text, batch_size=50):
         sentences = nltk.sent_tokenize(text)
-        predictions = sentence_client.predict(batch)
         i = 0
         while i < len(sentences):
             chosen_sents = []
-            batch = sentences[i: i + _FLAGS.batch_size]
+            batch = sentences[i: i + batch_size]
             predictions = self._sentence_client.predict(batch)
             for p in predictions:
                 if p > 0:
                     chosen_sents.append(p)
-            elmo_client = ElmoClient()
-            spacy_docs = list(parser.pipe(batch, n_threads=4))
+            spacy_docs = list(self.parser.pipe(batch, n_threads=4))
             question_candidates, = list(gap_filter.filter_gaps(
                 spacy_docs, batch_size=len(spacy_docs),
                 elmo_client=self._elmo_client))
-            gap_client.choose_best_gaps(question_candidates)
+            self._gap_client.choose_best_gaps(question_candidates)
             distractor_filter.filter_distractors(
-                question_candidates, spacy_docs, parser, word_model)
-            i += _FLAGS.batch_size
+                question_candidates, spacy_docs,
+                self.parser, self._word_model)
+            i += batch_size
             yield question_candidates
 
 
 def _main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--input_file",
+        required=True,
+        help="Location of file with text.",
+    )
+    parser.add_argument(
+        "--sentence_model",
+        required=True,
+        help="Directory of saved sentence model to use.",
+    )
+    parser.add_argument(
+        "--gap_model",
+        required=True,
+        help="Directory of saved gap model to use.",
+    )
+    parser.add_argument(
+        "--word_model",
+        required=True,
+        help="Directory of saved word model to use.",
+    )
+    parser.add_argument(
+        "--output_file",
+        help="Directory to save sentences with questions.",
+    )
+    parser.add_argument(
+        "--batch_size",
+        default=100,
+        help="Size of batches to compute predictions for.",
+    )
+    flags = parser.parse_args()
+    elmo_client = ElmoClient()
     question_generator = QuestionGenerator(
-        _FLAGS.sentence_model, _FLAGS.gap_model, _FLAGS.word_model)
-    with open(_FLAGS.input_file) as f:
+        flags.sentence_model, flags.gap_model, flags.word_model, elmo_client)
+    with open(flags.input_file) as f:
         text = f.read()
     question_candidates = []
     for batch in question_generator.generate_questions(text):
         question_candidates.extend(batch)
 
     print("Writing to output file...")
-    output_file = _FLAGS.output_file or _FLAGS.input_file
+    output_file = flags.output_file or flags.input_file
     with open(output_file, "w") as f:
         for qc in question_candidates:
             answer = qc.gap.text

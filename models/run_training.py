@@ -112,7 +112,7 @@ if __name__ == "__main__":
     tf.logging.set_verbosity(tf.logging.INFO)
     tf.set_random_seed(230)
     args = parser.parse_args()
-    
+
     warm_start_from = None
     if os.path.isdir(args.model_dir):
         warm_start_from = args.model_dir

@@ -4,6 +4,7 @@ import shutil
 import tempfile
 
 import tensorflow as tf
+from gensim.models.word2vec import Word2Vec
 
 from models import sentence_classifier, pointer_network
 from models.binary_gap_classifier import train_model
@@ -78,6 +79,23 @@ def save_binary_gap_classifier():
     )
 
 
+def save_word2vec_model():
+    sentences = ["Quizkly automatically generates questions.".split(),
+                 "A water bottle contains water".split(),
+                 "John went to the market.".split(),
+                 " The market was huge.".split()]
+    params = {
+        'size': 3,
+        'window': 2,
+        'min_count': 1,
+        'sample': 1E-5,
+    }
+    word2vec = Word2Vec(sentences, **params)
+    saved_model_dir = path.join("models", "test_data", "word_model")
+    word2vec.wv.save_word2vec_format(saved_model_dir)
+
+
 if __name__ == "__main__":
     save_sentence_classifier()
     save_binary_gap_classifier()
+    save_word2vec_model()
