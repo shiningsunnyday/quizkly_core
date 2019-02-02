@@ -1,4 +1,11 @@
-""" Script to train word vectors on wikipedia data with gensim. """
+""" Script to train word vectors on wikipedia data with gensim.
+Usage:
+    python -m service.train_word2vec \
+        --wiki_dump local/wiki_dump
+        --temp_text_file temp_file
+        --out_path model.word2vec
+        --iterations 10
+"""
 import argparse
 import multiprocessing
 
@@ -11,7 +18,7 @@ _PARSER = argparse.ArgumentParser()
 _PARSER.add_argument(
     "--wiki_dump",
     required=True,
-    help="Location of wikiepdia dump.",
+    help="Location of wikipdia dump.",
 )
 _PARSER.add_argument(
     "--temp_text_file",
