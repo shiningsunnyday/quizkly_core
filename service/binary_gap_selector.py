@@ -1,4 +1,12 @@
-"""Script to extract question worthy sentences from a file."""
+"""Script to choose gaps from sentence in a file.
+
+Usage:
+    python -m service.binary_gap_selector \
+        --input_file test.txt
+        --saved_model models/gap_model
+        --output_file test_qns.txt
+        --batch_size 100
+"""
 import argparse
 
 import spacy
