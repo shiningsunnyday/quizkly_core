@@ -17,6 +17,9 @@ message QuestionCandidate {
     // List of distractors ranked by confidence.
 	repeated Distractor distractors = 3;
 
+    // Context text to get around pronoun resolution.
+    string context_text = 4;
+
 }
 
 message Gap {
