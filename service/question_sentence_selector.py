@@ -1,4 +1,13 @@
-"""Script to extract question worthy sentences from a file."""
+"""Script to extract question worthy sentences from a file.
+
+Usage:
+    python -m service.question_sentence_selector \
+        --input_file test.txt
+        --saved_model models/saved_sentence_model
+        --output_file test_qns.txt
+        --batch_size 100
+"""
+
 import argparse
 
 from service.sentence_classifier_client import SentenceClassifierClient

@@ -1,4 +1,13 @@
-"""Script to extract question worthy sentences from a file."""
+"""Script to run full question generation pipeline on a file.
+Usage:
+    python -m service.question_generator \
+        --input_file test.txt
+        --sentence_model models/saved_sentence_model
+        --gap_model models/gap_model
+        --word_model models/model.word2vec
+        --output_file test_qns.txt
+        --batch_size 100
+"""
 import argparse
 
 import gensim
