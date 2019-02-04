@@ -156,7 +156,7 @@ if __name__ == "__main__":
         GAP_DATA_CONTAINER.docs, gap_text_lists, DummyElmoClient()
     )
     tfrecord_writer = tf.python_io.TFRecordWriter(
-        "datasets/testdata/question_candidates_test.tfrecords"
+        "datasets/testdata/question_candidates_test"
     )
     for qc in question_candidates:
         tfrecord_writer.write(qc.SerializeToString())
