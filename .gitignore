@@ -3,7 +3,8 @@ __pycache__/
 *.py[cod]
 **/.DS_Store
 local/
-datasets/testdata/*.tfrecords
+datasets/testdata/*
+!datasets/testdata/.keep
 models/test_data/gap_classifier.h5
 models/test_data/pointer_network/
 models/test_data/sentence_classifier
