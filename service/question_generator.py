@@ -32,7 +32,7 @@ class QuestionGenerator(object):
     def generate_questions(self, text, batch_size=50):
         sentences = nltk.sent_tokenize(text)
         i = 0
-        while i < len(sentences):=
+        while i < len(sentences):
             chosen_sent_idxs = []
             batch = sentences[i: i + batch_size]
             predictions = self._sentence_client.predict(batch)
@@ -42,7 +42,7 @@ class QuestionGenerator(object):
             spacy_docs = list(self.parser.pipe(batch, n_threads=4))
             chosen_docs = [spacy_docs[i] for i in chosen_sent_idxs]
             question_candidates, = list(gap_filter.filter_gaps(
-                spacy_docs, batch_size=len(spacy_docs),
+                spacy_docs, batch_size=len(chosen_docs),
                 elmo_client=self._elmo_client))
             self._gap_client.choose_best_gaps(question_candidates)
             distractor_filter.filter_distractors(

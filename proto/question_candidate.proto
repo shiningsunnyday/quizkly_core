@@ -11,14 +11,14 @@ message QuestionCandidate {
     // List of possible gaps.
 	repeated Gap gap_candidates = 2;
     
-    // Final chosen gap.
-	Gap gap = 4;
-    
     // List of distractors ranked by confidence.
 	repeated Distractor distractors = 3;
 
+    // Final chosen gap.
+    Gap gap = 4;
+
     // Context text to get around pronoun resolution.
-    string context_text = 4;
+    string context_text = 5;
 
 }
 
