@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x1eproto/question_candidate.proto\"\x81\x01\n\x11QuestionCandidate\x12\x19\n\x11question_sentence\x18\x01 \x01(\t\x12\x1c\n\x0egap_candidates\x18\x02 \x03(\x0b\x32\x04.Gap\x12\x11\n\x03gap\x18\x04 \x01(\x0b\x32\x04.Gap\x12 \n\x0b\x64istractors\x18\x03 \x03(\x0b\x32\x0b.Distractor\"\xf2\x01\n\x03Gap\x12\x0c\n\x04text\x18\x01 \x01(\t\x12\x13\n\x0bstart_index\x18\x02 \x01(\x05\x12\x11\n\tend_index\x18\x03 \x01(\x05\x12%\n\x0fpredicted_label\x18\x04 \x01(\x0e\x32\x0c.Gap.GapType\x12\x12\n\nconfidence\x18\x05 \x01(\x02\x12!\n\x0btrain_label\x18\x06 \x01(\x0e\x32\x0c.Gap.GapType\x12\x11\n\tembedding\x18\x07 \x03(\x02\x12\x10\n\x08pos_tags\x18\x08 \x03(\t\"2\n\x07GapType\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0c\n\x08NEGATIVE\x10\x01\x12\x0c\n\x08POSITIVE\x10\x02\"\x1a\n\nDistractor\x12\x0c\n\x04text\x18\x01 \x01(\tb\x06proto3')
+  serialized_pb=_b('\n\x1eproto/question_candidate.proto\"\x97\x01\n\x11QuestionCandidate\x12\x19\n\x11question_sentence\x18\x01 \x01(\t\x12\x1c\n\x0egap_candidates\x18\x02 \x03(\x0b\x32\x04.Gap\x12 \n\x0b\x64istractors\x18\x03 \x03(\x0b\x32\x0b.Distractor\x12\x11\n\x03gap\x18\x04 \x01(\x0b\x32\x04.Gap\x12\x14\n\x0c\x63ontext_text\x18\x05 \x01(\t\"\xf2\x01\n\x03Gap\x12\x0c\n\x04text\x18\x01 \x01(\t\x12\x13\n\x0bstart_index\x18\x02 \x01(\x05\x12\x11\n\tend_index\x18\x03 \x01(\x05\x12%\n\x0fpredicted_label\x18\x04 \x01(\x0e\x32\x0c.Gap.GapType\x12\x12\n\nconfidence\x18\x05 \x01(\x02\x12!\n\x0btrain_label\x18\x06 \x01(\x0e\x32\x0c.Gap.GapType\x12\x11\n\tembedding\x18\x07 \x03(\x02\x12\x10\n\x08pos_tags\x18\x08 \x03(\t\"2\n\x07GapType\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0c\n\x08NEGATIVE\x10\x01\x12\x0c\n\x08POSITIVE\x10\x02\"\x1a\n\nDistractor\x12\x0c\n\x04text\x18\x01 \x01(\tb\x06proto3')
 )
 
 
@@ -45,8 +45,8 @@ _GAP_GAPTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=359,
-  serialized_end=409,
+  serialized_start=381,
+  serialized_end=431,
 )
 _sym_db.RegisterEnumDescriptor(_GAP_GAPTYPE)
 
@@ -73,16 +73,23 @@ _QUESTIONCANDIDATE = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='gap', full_name='QuestionCandidate.gap', index=2,
+      name='distractors', full_name='QuestionCandidate.distractors', index=2,
+      number=3, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='gap', full_name='QuestionCandidate.gap', index=3,
       number=4, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='distractors', full_name='QuestionCandidate.distractors', index=3,
-      number=3, type=11, cpp_type=10, label=3,
-      has_default_value=False, default_value=[],
+      name='context_text', full_name='QuestionCandidate.context_text', index=4,
+      number=5, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
@@ -99,7 +106,7 @@ _QUESTIONCANDIDATE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=35,
-  serialized_end=164,
+  serialized_end=186,
 )
 
 
@@ -179,8 +186,8 @@ _GAP = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=167,
-  serialized_end=409,
+  serialized_start=189,
+  serialized_end=431,
 )
 
 
@@ -210,13 +217,13 @@ _DISTRACTOR = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=411,
-  serialized_end=437,
+  serialized_start=433,
+  serialized_end=459,
 )
 
 _QUESTIONCANDIDATE.fields_by_name['gap_candidates'].message_type = _GAP
-_QUESTIONCANDIDATE.fields_by_name['gap'].message_type = _GAP
 _QUESTIONCANDIDATE.fields_by_name['distractors'].message_type = _DISTRACTOR
+_QUESTIONCANDIDATE.fields_by_name['gap'].message_type = _GAP
 _GAP.fields_by_name['predicted_label'].enum_type = _GAP_GAPTYPE
 _GAP.fields_by_name['train_label'].enum_type = _GAP_GAPTYPE
 _GAP_GAPTYPE.containing_type = _GAP

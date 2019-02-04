@@ -14,7 +14,7 @@ import gensim
 import nltk
 import spacy
 
-from filters import distractor_filter, gap_filter
+from filters import context_filter, distractor_filter, gap_filter
 from service.binary_gap_classifier_client import (
     BinaryGapClassifierClient)
 from service.elmo_client import ElmoClient
@@ -23,7 +23,7 @@ from service.sentence_classifier_client import SentenceClassifierClient
 
 class QuestionGenerator(object):
     def __init__(self, sentence_model_path, gap_model_path,
-                 word_model_path, elmo_client):
+                 word_model_path, elmo_client, parser):
         self._sentence_client = SentenceClassifierClient(sentence_model_path)
         self._gap_client = BinaryGapClassifierClient(gap_model_path)
         self._elmo_client = elmo_client
@@ -31,7 +31,7 @@ class QuestionGenerator(object):
             gensim.models.keyedvectors.KeyedVectors.load_word2vec_format(
                 word_model_path)
         )
-        self.parser = spacy.load("en_core_web_md")
+        self.parser = parser
 
         # Handle spacy bug with stopwords.
         self.parser.vocab.add_flag(
@@ -42,20 +42,26 @@ class QuestionGenerator(object):
         sentences = nltk.sent_tokenize(text)
         i = 0
         while i < len(sentences):
-            chosen_sents = []
+            chosen_sent_idxs = []
             batch = sentences[i: i + batch_size]
             predictions = self._sentence_client.predict(batch)
-            for p in predictions:
+            for i, p in enumerate(predictions):
                 if p > 0:
-                    chosen_sents.append(p)
+                    chosen_sent_idxs.append(i)
             spacy_docs = list(self.parser.pipe(batch, n_threads=4))
+            chosen_docs = [spacy_docs[i] for i in chosen_sent_idxs]
             question_candidates, = list(gap_filter.filter_gaps(
-                spacy_docs, batch_size=len(spacy_docs),
+                spacy_docs, batch_size=len(chosen_docs),
                 elmo_client=self._elmo_client))
             self._gap_client.choose_best_gaps(question_candidates)
             distractor_filter.filter_distractors(
                 question_candidates, spacy_docs,
                 self.parser, self._word_model)
+            for i, qc in enumerate(question_candidates):
+                context_filter.dep_context(
+                    spacy_docs[:chosen_sent_idxs[i]],
+                    spacy_docs[i],
+                    self.parser)
             i += batch_size
             yield question_candidates
 
@@ -94,7 +100,9 @@ def _main():
     flags = parser.parse_args()
     elmo_client = ElmoClient()
     question_generator = QuestionGenerator(
-        flags.sentence_model, flags.gap_model, flags.word_model, elmo_client)
+        flags.sentence_model, flags.gap_model,
+        flags.word_model, elmo_client,
+        spacy.load("en_core_web_md"))
     with open(flags.input_file) as f:
         text = f.read()
     question_candidates = []

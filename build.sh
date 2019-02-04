@@ -20,3 +20,4 @@ python -m nltk.downloader wordnet
 
 echo "Downloading spacy models"
 python -m spacy download en_core_web_md
+python -m spacy download en_core_web_sm

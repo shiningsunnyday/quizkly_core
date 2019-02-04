@@ -38,7 +38,7 @@ def save_model(hparams, model, saved_model_dir):
 
 def save_sentence_classifier():
     hparams = SentHParams(
-        train_records="datasets/testdata/*.tfrecords",
+        train_records="datasets/testdata/squad_test.tfrecords",
         train_batch_size=2,
         sentence_feature="sentence",
         label_feature="question_worthy",

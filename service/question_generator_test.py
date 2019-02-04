@@ -1,4 +1,5 @@
 """ Tests for QuestionGenerator """
+import spacy
 import tensorflow as tf
 
 from datasets.create_test_data import DummyElmoClient
@@ -12,9 +13,10 @@ class QuestionGeneratorTest(tf.test.TestCase):
         sentence_model_path = ("models/test_data/sentence_classifier/"
                                "saved_model")
         word_model_path = "models/test_data/word_model"
+        parser = spacy.load("en_core_web_sm")
         cls._client = QuestionGenerator(
             sentence_model_path, gap_model_path, word_model_path,
-            DummyElmoClient())
+            DummyElmoClient(), parser)
         cls._text = "John went to the market. The market was huge."
 
     def test_generate_questions(self):
