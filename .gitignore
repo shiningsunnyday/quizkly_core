@@ -4,6 +4,7 @@ __pycache__/
 **/.DS_Store
 local/
 datasets/testdata/question_candidates_test
+datasets/testdata/*.tfrecords
 models/test_data/gap_classifier.h5
 models/test_data/pointer_network/
 models/test_data/sentence_classifier
