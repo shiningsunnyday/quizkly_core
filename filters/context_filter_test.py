@@ -10,7 +10,7 @@ from filters.context_filter import dep_context
 class TestFilterGaps(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        parser = spacy.load("en_core_web_md", add_vectors=False)
+        parser = spacy.load("en_core_web_sm", add_vectors=False)
         sentence_sets = [
             ["The tricuspid valve has three cusps, which connect to chordae "
              "tendinae and three papillary muscles named the anterior, "

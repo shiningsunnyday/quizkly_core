@@ -14,7 +14,7 @@ from service.sentence_classifier_client import SentenceClassifierClient
 
 class QuestionGenerator(object):
     def __init__(self, sentence_model_path, gap_model_path,
-                 word_model_path, elmo_client):
+                 word_model_path, elmo_client, parser):
         self._sentence_client = SentenceClassifierClient(sentence_model_path)
         self._gap_client = BinaryGapClassifierClient(gap_model_path)
         self._elmo_client = elmo_client
@@ -22,7 +22,7 @@ class QuestionGenerator(object):
             gensim.models.keyedvectors.KeyedVectors.load_word2vec_format(
                 word_model_path)
         )
-        self.parser = spacy.load("en_core_web_md")
+        self.parser = parser
 
         # Handle spacy bug with stopwords.
         self.parser.vocab.add_flag(
@@ -91,7 +91,9 @@ def _main():
     flags = parser.parse_args()
     elmo_client = ElmoClient()
     question_generator = QuestionGenerator(
-        flags.sentence_model, flags.gap_model, flags.word_model, elmo_client)
+        flags.sentence_model, flags.gap_model,
+        flags.word_model, elmo_client,
+        spacy.load("en_core_web_md"))
     with open(flags.input_file) as f:
         text = f.read()
     question_candidates = []
