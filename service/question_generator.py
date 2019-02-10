@@ -29,7 +29,7 @@ class QuestionGenerator(object):
         self._elmo_client = elmo_client
         self._word_model = (
             gensim.models.keyedvectors.KeyedVectors.load_word2vec_format(
-                word_model_path)
+                word_model_path, binary=True)
         )
         self.parser = parser
 
@@ -38,29 +38,29 @@ class QuestionGenerator(object):
             lambda s: s.lower() in spacy.lang.en.stop_words.STOP_WORDS,
             spacy.attrs.IS_STOP)
 
-    def generate_questions(self, text, batch_size=50):
+    def generate_questions(self, text, batch_size=50, is_test=False):
         sentences = nltk.sent_tokenize(text)
         i = 0
         while i < len(sentences):
             chosen_sent_idxs = []
             batch = sentences[i: i + batch_size]
             predictions = self._sentence_client.predict(batch)
-            for i, p in enumerate(predictions):
-                if p > 0:
-                    chosen_sent_idxs.append(i)
+            for j, p in enumerate(predictions):
+                if p > 0 or is_test:
+                    chosen_sent_idxs.append(j)
             spacy_docs = list(self.parser.pipe(batch, n_threads=4))
-            chosen_docs = [spacy_docs[i] for i in chosen_sent_idxs]
+            chosen_docs = [spacy_docs[j] for j in chosen_sent_idxs]
             question_candidates, = list(gap_filter.filter_gaps(
-                spacy_docs, batch_size=len(chosen_docs),
+                chosen_docs, batch_size=len(chosen_docs),
                 elmo_client=self._elmo_client))
             self._gap_client.choose_best_gaps(question_candidates)
             distractor_filter.filter_distractors(
-                question_candidates, spacy_docs,
+                question_candidates, chosen_docs,
                 self.parser, self._word_model)
-            for i, qc in enumerate(question_candidates):
+            for j, qc in enumerate(question_candidates):
                 context_filter.dep_context(
-                    spacy_docs[:chosen_sent_idxs[i]],
-                    spacy_docs[i],
+                    spacy_docs[:chosen_sent_idxs[j]],
+                    spacy_docs[j],
                     self.parser)
             i += batch_size
             yield question_candidates
