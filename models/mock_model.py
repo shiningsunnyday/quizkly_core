@@ -8,6 +8,7 @@ _LABELS = [1.0, 0.0, 1.0]
 FEATURE_NAME = "feature"
 LABEL_NAME = "label"
 
+
 class HParams(tf.contrib.training.HParams):
     learning_rate = None
     batch_size = None
