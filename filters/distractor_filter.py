@@ -239,6 +239,8 @@ def filter_wordnet(gap, distractors, stemmer):
     candidates = filter_hypomeronyms(
         candidates, gap, gap_syn, gap_hypomeronyms, stemmer)
     candidates = filter_duplicates(candidates, gap, gap_syn, stemmer)
+    if len(candidates) == 0:
+        return []
     return list(zip(*candidates))[1]
 
 

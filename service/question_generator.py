@@ -48,6 +48,8 @@ class QuestionGenerator(object):
             for j, p in enumerate(predictions):
                 if p > 0 or is_test:
                     chosen_sent_idxs.append(j)
+            if len(chosen_sent_idxs) == 0:
+                continue
             spacy_docs = list(self.parser.pipe(batch, n_threads=4))
             chosen_docs = [spacy_docs[j] for j in chosen_sent_idxs]
             question_candidates, = list(gap_filter.filter_gaps(
