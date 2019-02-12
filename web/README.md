@@ -6,3 +6,7 @@ cd into quizkly and run
 	python manage.py makemigrations
 	python manage.py migrate
 	python manage.py runserver
+
+Common issues:
+	403 error code
+		Add a console.log(csrftoken) right before the fetch functions in the callbacks of form submission in src/Components/Horizontal/Interface/InnerInterface.js (sometimes token becomes inactive)

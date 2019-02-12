@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.exceptions import ParseError, AuthenticationFailed
 from rest_framework.parsers import JSONParser
+from rest_framework.renderers import JSONRenderer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from quizkly_app.models import AppUser, Corpus, Quiz, Question, Distractor
 from rest_framework.reverse import reverse
@@ -191,6 +192,7 @@ class CorpusDetail(APIView):
 
 class QuizList(generics.ListAPIView):
     permission_classes = (IsAuthenticated,)
+    parser_classes = (JSONParser,)
     def get_queryset(self):
         queryset = Quiz.objects.all()
         if('corpus_id' in self.request.data):
@@ -207,6 +209,7 @@ class QuizDetail(generics.RetrieveUpdateDestroyAPIView):
 
 class QuestionList(generics.ListAPIView):
     permission_classes = (IsAuthenticated,)
+    parser_classes = (JSONParser,)
     def get_queryset(self):
         queryset = Question.objects.all()
         if('ques_id' in self.request.data):
