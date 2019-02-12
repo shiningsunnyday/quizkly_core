@@ -20,7 +20,7 @@ ROOT = os.path.dirname("/Users/shiningsunnyday/Documents/GitHub/kvizo_core/")
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "-gu4k2yj@^6gc_$4jb5&87)mc8@cec@be93$_@f=&#u5fec^ob"
+SECRET_KEY = "ielhp@bo!ymxcpqh-2kntbvib^pgq561%ez*v63=2vpp0wlf94"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True

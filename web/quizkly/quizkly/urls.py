@@ -17,6 +17,6 @@ from django.contrib import admin
 from django.urls import path, include
 from quizkly_app import views
 
+
 # from rest_framework_jwt.views import obtain_jwt_token
-# path(r'^api-token-auth/', obtain_jwt_token),
 urlpatterns = [path("", include("quizkly_app.urls"))]
