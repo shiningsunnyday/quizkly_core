@@ -35,5 +35,6 @@ class Distractor(models.Model):
     index = models.IntegerField()
     generated = models.DateTimeField(auto_now_add=True)
     question = models.ForeignKey(Question, on_delete = models.CASCADE)
+    text = models.CharField(max_length=30)
     class Meta:
         ordering = ("generated",)
