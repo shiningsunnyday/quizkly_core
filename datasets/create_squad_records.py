@@ -21,6 +21,7 @@ QUESTION_WORTHY_LABEL = "question_worthy"
 START_INDEX = "answer_start"
 END_INDEX = "answer_end"
 SENTENCE_LENGTH = "sentence_length"
+CONTEXT = "context"
 
 FEATURE_NAMES = [
     SENTENCE,
@@ -30,6 +31,7 @@ FEATURE_NAMES = [
     START_INDEX,
     END_INDEX,
     SENTENCE_LENGTH,
+    CONTEXT
 ]
 
 
@@ -43,8 +45,9 @@ def get_question_sentence_tuples(paragraph_data):
         (if it exists), answer to the question if question exists,
         question-worthy label (1 if question exists, 0 otherwise),
         start index of answer tokens (inclusive),
-        end index of answer tokens (inclusive) and
-        length of split sentence.
+        end index of answer tokens (inclusive),
+        length of split sentence,
+        text of the paragraph that the question belongs to.
     """
 
     def _find_sub_list(sl, l):
@@ -84,6 +87,7 @@ def get_question_sentence_tuples(paragraph_data):
                             start_idx,
                             end_idx - 1,
                             len(split_sent),
+                            context,
                         )
                     else:
                         yield (
@@ -94,9 +98,10 @@ def get_question_sentence_tuples(paragraph_data):
                             -1,
                             -1,
                             len(split_sent),
+                            context
                         )
         if not question_worthy:
-            yield (sent, "", "", 0, -1, -1, len(split_sent))
+            yield (sent, "", "", 0, -1, -1, len(split_sent), context)
 
 
 def _write_tf_records(args):
@@ -135,17 +140,17 @@ def _write_tf_records(args):
         "Examples where an exact string match couldn't find an answer: %d"
         % (num_no_ans)
     )
-    pos_bound = int(0.9 * (len(pos_examples)))
-    neg_bound = int(0.9 * (len(neg_examples)))
-    train_examples = pos_examples[:pos_bound] + neg_examples[:neg_bound]
-    print(len(train_examples))
-    test_examples = pos_examples[pos_bound:] + neg_examples[neg_bound:]
+    train_bound = int(args.train_split * (len(neg_examples)))
+    train_examples = pos_examples[:train_bound] + neg_examples[:train_bound]
+    print("Number of training examples: ", len(train_examples))
+    test_examples = (pos_examples[train_bound: len(neg_examples)] +
+                     neg_examples[train_bound: len(neg_examples)])
     shuffle(train_examples)
     write_to_file(
         train_examples, os.path.join(args.output_path, "train.tfrecords")
     )
     shuffle(test_examples)
-    print(len(test_examples))
+    print("Number of testing examples: ", len(test_examples))
     write_to_file(
         test_examples, os.path.join(args.output_path, "test.tfrecords")
     )
@@ -176,6 +181,7 @@ if __name__ == "__main__":
             "Percentage of records to go into the train file."
             "Remainder goes to test file."
         ),
+        type=float
     )
 
     args = parser.parse_args()

@@ -11,7 +11,8 @@ class SentenceClassifierClientTest(tf.test.TestCase):
         )
 
     def test_predict(self):
-        predictions = self._client.predict(["hey", "hi", "bye"])
+        predictions = self._client.predict(
+            ["hey", "hi", "bye"], ["hey", "hi", "bye"])
         self.assertListEqual([3], list(predictions.shape))
 
 

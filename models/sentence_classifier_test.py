@@ -14,6 +14,7 @@ class TestSentenceClassifier(test_utils.ModelTester):
             train_records="datasets/testdata/*.tfrecords",
             eval_records="datasets/testdata/*.tfrecords",
             sentence_feature="sentence",
+            context_feature="context",
             label_feature="question_worthy",
             train_batch_size=3,
             eval_batch_size=3,
