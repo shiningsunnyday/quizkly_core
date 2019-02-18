@@ -4,10 +4,7 @@ class MyMiddleware:
 
     def __call__(self, request):
         response = self.get_response(request)
-        response["Access-Control-Allow-Origin"] = [
-            "localhost:3000/login",
-            "localhost:3000/quizkly",
-        ]
+        response["Access-Control-Allow-Origin"] = "localhost:3000/login"
         response["Access-Control-Allow-Methods"] = "POST"
         response[
             "Access-Control-Allow-Headers"

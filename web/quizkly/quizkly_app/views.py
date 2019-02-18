@@ -29,6 +29,8 @@ from django.template import RequestContext, Template
 from service.question_generator import QuestionGenerator
 from service.elmo_client import ElmoClient
 
+gen = None
+
 class SignUp(APIView):
     parser_classes = (JSONParser,)
     permission_classes = (AllowAny,)
@@ -99,7 +101,10 @@ def process_corpus(corpus_id, quiz_id):
     gmp = "/Users/shiningsunnyday/Documents/GitHub/kvizo_core/models/gap_model"
     wmp = "/Users/shiningsunnyday/Documents/GitHub/kvizo_core/models/wmdatabio70.bin"
     ec = ElmoClient()
-    gen = QuestionGenerator(smp, gmp, wmp, ec)
+    global gen
+    if gen == None:
+        print("need new gen")
+        gen = QuestionGenerator(smp, gmp, wmp, ec)
     question_candidates = []
     for batch in gen.generate_questions(corpus.content):
         question_candidates.extend(batch)
