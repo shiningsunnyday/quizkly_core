@@ -4,6 +4,7 @@ import tensorflow_hub as hub
 
 # Constants to be used for saving/serving.
 SENTENCE_SIGNATURE = "sentence"
+CONTEXT_SIGNATURE = "context"
 PREDICTION_SIGNATURE = "predictions"
 
 
@@ -11,6 +12,7 @@ class HParams(tf.contrib.training.HParams):
     train_records = None
     eval_records = None
     sentence_feature = None
+    context_feature = None
     label_feature = None
     train_batch_size = None
     eval_batch_size = None
@@ -33,7 +35,8 @@ def input_fn(params, mode):
     def serving_input_receiver_fn():
         """Function for exported serving model"""
         inputs = {
-            SENTENCE_SIGNATURE: tf.placeholder(shape=[None], dtype=tf.string)
+            SENTENCE_SIGNATURE: tf.placeholder(shape=[None], dtype=tf.string),
+            CONTEXT_SIGNATURE: tf.placeholder(shape=[None], dtype=tf.string)
         }
         return tf.estimator.export.ServingInputReceiver(inputs, inputs)
 
@@ -42,12 +45,14 @@ def input_fn(params, mode):
 
     feature_spec = {
         params.sentence_feature: tf.FixedLenFeature([], tf.string),
+        params.context_feature: tf.FixedLenFeature([], tf.string),
         params.label_feature: tf.FixedLenFeature([], tf.int64),
     }
 
     def _parse_fn(example_proto):
         parsed = tf.parse_single_example(example_proto, feature_spec)
         parsed[SENTENCE_SIGNATURE] = parsed.pop(params.sentence_feature)
+        parsed[CONTEXT_SIGNATURE] = parsed.pop(params.context_feature)
         return parsed, parsed[params.label_feature]
 
     def input_fn_callable():
@@ -77,15 +82,22 @@ def model_fn(features, labels, mode, params):
         embedded_sentences = tf.random_uniform(
             [tf.shape(features[SENTENCE_SIGNATURE])[0], 256]
         )
+        embedded_contexts = tf.random_uniform(
+            [tf.shape(features[CONTEXT_SIGNATURE])[0], 256]
+        )
     else:
         sentence_encoder = hub.Module(
             "https://tfhub.dev/google/universal-sentence-encoder/2"
         )
         sentences = features[SENTENCE_SIGNATURE]
+        contexts = features[CONTEXT_SIGNATURE]
         embedded_sentences = sentence_encoder(sentences)
-    tf.summary.histogram("embedded", embedded_sentences)
+        embedded_contexts = sentence_encoder(contexts)
+    tf.summary.histogram("embedded_sentences", embedded_sentences)
+    tf.summary.histogram("embedded_contexts", embedded_contexts)
     embedded_sentences = tf.layers.dense(
-        embedded_sentences, params.hidden_size, activation=tf.tanh
+        tf.concat([embedded_sentences, embedded_contexts], axis=1),
+        params.hidden_size, activation=tf.tanh
     )
     logits = tf.layers.dense(embedded_sentences, params.num_classes)
     if mode != tf.estimator.ModeKeys.PREDICT:

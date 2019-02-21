@@ -32,6 +32,11 @@ _PARSER.add_argument(
     default=100,
     help="Size of batches to compute predictions for.",
 )
+_PARSER.add_argument(
+    "--context_window",
+    default=5,
+    help="Size of batches to compute predictions for.",
+)
 _FLAGS = _PARSER.parse_args()
 
 
@@ -44,8 +49,14 @@ def _main():
     predictions = []
     i = 0
     while i < len(lines):
+        contexts = [
+            " ".join(lines[max(j - _FLAGS.context_window, 0):
+                           min(j + _FLAGS.context_window, len(lines))])
+            for j in range(i, min(i + _FLAGS.batch_size, len(lines)))
+        ]
         predictions.extend(
-            client.predict(lines[i: i + _FLAGS.batch_size]))
+            client.predict(
+                lines[i: i + _FLAGS.batch_size], contexts))
         i += _FLAGS.batch_size
     print("Writing to output file...")
     output_file = _FLAGS.output_file or _FLAGS.input_file
