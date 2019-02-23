@@ -7,6 +7,7 @@ import tensorflow as tf
 
 from datasets import create_squad_records
 from datasets.create_gap_data import create_question_candidates
+from datasets.create_mcq_data import create_sequence_examples
 from datasets.dataset_utils import create_example
 
 
@@ -99,6 +100,23 @@ class GapDataContainer(object):
             )
 
 
+class DummyWordModel(object):
+    """ Dummy word model class. """
+    def most_similar_cosmul(self, positive, topn):
+        word_score = [
+            ("a'_b", 1.0), ("b!_c", 0.9), ("c_d.", 0.8), ("d_e", 0.7),
+            ("e_f", 0.6), ("f_g,", 0.5), ("g._h", 0.4), ("h_i", 0.3),
+            ("i_j", 0.2), ("j_k", 0.1)
+        ]
+        return word_score[:topn]
+
+    def __getitem__(self, key):
+        return numpy.random.normal(size=(10))
+
+    def similarity(self, x, y):
+        return numpy.random.normal(size=1)
+
+
 GAP_DATA_CONTAINER = GapDataContainer()
 
 
@@ -160,4 +178,18 @@ if __name__ == "__main__":
     )
     for qc in question_candidates:
         tfrecord_writer.write(qc.SerializeToString())
+    tfrecord_writer.close()
+
+    # Create test distractor sequence examples.
+    question = "How did he win the game?"
+    answer = "playing"
+    distractors = [
+        "cheating", "gaming", "hacking", "gambling"
+    ]
+    tfrecord_writer = tf.python_io.TFRecordWriter(
+        "datasets/testdata/distractors_test"
+    )
+    for ex in create_sequence_examples(question, answer, distractors,
+                                       DummyWordModel()):
+        tfrecord_writer.write(ex.SerializeToString())
     tfrecord_writer.close()

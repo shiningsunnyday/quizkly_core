@@ -8,4 +8,5 @@ datasets/testdata/*
 models/test_data/gap_classifier.h5
 models/test_data/pointer_network/
 models/test_data/sentence_classifier
+models/test_data/distractor_encoder/
 models/test_data/word_model

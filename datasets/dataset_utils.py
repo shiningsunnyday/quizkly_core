@@ -15,6 +15,11 @@ def bytes_feature(value):
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
 
+def float_list_feature(value):
+    """Creates feature for float lists."""
+    return tf.train.Feature(float_list=tf.train.FloatList(value=value))
+
+
 def create_example(values, names):
     """Creates an example from given values."""
     tf_features = {}
