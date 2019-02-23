@@ -42,6 +42,7 @@ def save_sentence_classifier():
         train_records="datasets/testdata/squad_test.tfrecords",
         train_batch_size=2,
         sentence_feature="sentence",
+        context_feature="context",
         label_feature="question_worthy",
         hidden_size=2,
         num_classes=2,

@@ -135,8 +135,10 @@ class DummyElmoClient(object):
 if __name__ == "__main__":
     # Create test squad data records.
     squad_tuples = [
-        ("Obama was president.", "Who was Obama?", "president", 1, 2, 3, 3),
-        ("He was popular.", "", "", 0, -1, -1, 4),
+        ("Obama was president.", "Who was Obama?", "president", 1, 2, 3, 3,
+         "Obama was president. He was popular."),
+        ("He was popular.", "", "", 0, -1, -1, 4,
+         "Obama was president. He was popular."),
         (
             "Washington DC was where he was.",
             "Where was Obama?",
@@ -145,6 +147,7 @@ if __name__ == "__main__":
             0,
             2,
             6,
+            "Obama was president. He was popular."
         ),
         (
             "He married Michelle in 1920.",
@@ -154,8 +157,10 @@ if __name__ == "__main__":
             2,
             3,
             5,
+            "Obama was president. He was popular.",
         ),
-        ("He hated bad people.", "", "", 0, -1, -1, 4),
+        ("He hated bad people.", "", "", 0, -1, -1, 4,
+         "Obama was president. He was popular."),
     ]
     tfrecord_writer = tf.python_io.TFRecordWriter(
         "datasets/testdata/squad_test.tfrecords"

@@ -37,6 +37,10 @@ class TestCreateSquadRecords(unittest.TestCase):
         cls.squad_data = json.loads(test_json_str)
 
     def test_get_question_sentence_tuples(self):
+        context = ("Obama was president. He was popular. "
+                   "Washington DC was where he was. "
+                   "He married Michelle in 1920. "
+                   "He hated bad people.")
         expected_data_tuples = [
             (
                 "Obama was president.",
@@ -46,8 +50,9 @@ class TestCreateSquadRecords(unittest.TestCase):
                 2,
                 2,
                 3,
+                context
             ),
-            ("He was popular.", "", "", 0, -1, -1, 3),
+            ("He was popular.", "", "", 0, -1, -1, 3, context),
             (
                 "Washington DC was where he was.",
                 "Where was Obama?",
@@ -56,6 +61,7 @@ class TestCreateSquadRecords(unittest.TestCase):
                 0,
                 1,
                 6,
+                context
             ),
             (
                 "He married Michelle in 1920.",
@@ -65,8 +71,9 @@ class TestCreateSquadRecords(unittest.TestCase):
                 2,
                 2,
                 5,
+                context
             ),
-            ("He hated bad people.", "", "", 0, -1, -1, 4),
+            ("He hated bad people.", "", "", 0, -1, -1, 4, context),
         ]
         self.assertListEqual(
             list(get_question_sentence_tuples(self.squad_data)),
