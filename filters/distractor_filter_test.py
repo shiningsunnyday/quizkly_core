@@ -113,7 +113,6 @@ class TestFilterDistractors(unittest.TestCase):
         self.assertNotIn(("gene replication", 0.90), filtered_distractors)
         self.assertNotIn(("genetic recombination", 0.90), filtered_distractors)
 
-
     def test_filter_part_of_speech(self):
         mock_parser = mock.Mock()
         mock_parser.tokenizer = mock.Mock()
