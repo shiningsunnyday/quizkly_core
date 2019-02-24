@@ -66,7 +66,7 @@ def filter_distractors_single(question_candidate, spacy_doc, parser,
     distractors = nearest_neighbors(gap, word_model, num_dists * 10)
     if not distractors:
         return []
-    distractors = filter_words_in_sent(question, distractors, stemmer)
+    distractors = filter_words_in_sent(gap, question, distractors, stemmer)
     distractors = filter_stopword(distractors)
     distractors = filter_part_of_speech(gap, distractors, parser)
     distractors = filter_wordnet(gap, distractors, stemmer)
@@ -136,12 +136,13 @@ def _stem_words(stemmer, words):
     return [stemmer.stem(word.lower()) for word in words]
 
 
-def filter_words_in_sent(sentence, distractors, stemmer):
+def filter_words_in_sent(gap, sentence, distractors, stemmer):
     """
     Removes distractor candidates that appear in sentence.
     Comparison is done on the stemmed tokens.
 
     Args:
+        gap: chosen gap.
         distractors: list of (candidate, score) tuples
         sentence: question sentence
         stemmer: nltk stemmer.
@@ -150,15 +151,31 @@ def filter_words_in_sent(sentence, distractors, stemmer):
         list of (candidate, score) tuples
     """
 
+    def _get_sub_idx(x, y):
+        l1, l2 = len(x), len(y)
+        for i in range(l1):
+            if x[i:i+l2] == y:
+                return i
+        return -1
+
     # remove puncs from question
     punc_stripper = str.maketrans('', '', string.punctuation)
     sentence = sentence.translate(punc_stripper)
     stemmed_sentence = _stem_words(stemmer, sentence.split())
     filtered_distractors = []
-
+    gap_idx = _get_sub_idx(sentence.split(), gap.text.split())
     for pair in distractors:
         stemmed_phrase = _stem_words(stemmer, pair[0].split(" "))
-        if not all(w in stemmed_sentence for w in stemmed_phrase):
+        if all(w in stemmed_sentence for w in stemmed_phrase):
+            continue
+        if gap_idx == -1:
+            filtered_distractors.append(pair)
+            continue
+        # None of the words should be duplicated in the vicinity.
+        neighborhood = stemmed_sentence[
+            max(0, gap_idx - 2): min(len(stemmed_sentence), gap_idx + 4)
+        ]
+        if not any(w in neighborhood for w in stemmed_phrase):
             filtered_distractors.append(pair)
 
     return filtered_distractors

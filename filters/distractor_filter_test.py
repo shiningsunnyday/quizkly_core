@@ -36,7 +36,8 @@ class TestFilterDistractors(unittest.TestCase):
             "The circulatory system pumps blood to all organs.",
             "The cytoplasm is the semiliquid portion of the cell.",
             "Proteins are manufactured by ribosomes",
-            "Mr. Best flew to New York on Saturday morning."
+            "Mr. Best flew to New York on Saturday morning.",
+            "This process known as gene recombination helps in reproduction."
         ]
         gaps = [
             question_candidate_pb2.Gap(
@@ -53,6 +54,10 @@ class TestFilterDistractors(unittest.TestCase):
             ),
             question_candidate_pb2.Gap(
                 text="Saturday", start_index=7, end_index=8,
+                pos_tags=["NOUN"]
+            ),
+            question_candidate_pb2.Gap(
+                text="recombination", start_index=5, end_index=6,
                 pos_tags=["NOUN"]
             )
         ]
@@ -80,19 +85,34 @@ class TestFilterDistractors(unittest.TestCase):
             ("organ", 0.8), ("digestive system", 0.7)
         ]
         filtered_distractors = distractor_filter.filter_words_in_sent(
+            self._question_cands[0].gap,
             self._question_cands[0].question_sentence,
             distractors, self._stemmer)
         self.assertNotIn(("organ", 0.8), filtered_distractors)
         self.assertNotIn(("blood", 0.9), filtered_distractors)
+
         distractors = [
             ("respiratory system", 0.90), ("blood", 0.90),
             ("cells", 0.8), ("portions", 0.7)
         ]
         filtered_distractors = distractor_filter.filter_words_in_sent(
+            self._question_cands[1].gap,
             self._question_cands[1].question_sentence,
             distractors, self._stemmer)
         self.assertNotIn(("cells", 0.8), filtered_distractors)
         self.assertNotIn(("portions", 0.7), filtered_distractors)
+
+        distractors = [
+            ("gene replication", 0.90), ("genetic recombination", 0.90),
+            ("replication", 0.8), ("splitting", 0.7)
+        ]
+        filtered_distractors = distractor_filter.filter_words_in_sent(
+            self._question_cands[4].gap,
+            self._question_cands[4].question_sentence,
+            distractors, self._stemmer)
+        self.assertNotIn(("gene replication", 0.90), filtered_distractors)
+        self.assertNotIn(("genetic recombination", 0.90), filtered_distractors)
+
 
     def test_filter_part_of_speech(self):
         mock_parser = mock.Mock()
