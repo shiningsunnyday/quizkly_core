@@ -20,7 +20,6 @@ class QuestionGeneratorTest(tf.test.TestCase):
         cls._text = "John went to the market. The market was huge."
 
     def test_generate_questions(self):
-        print("hi")
         batches = self._client.generate_questions(
             self._text, batch_size=2, is_test=True)
         for batch in batches:
