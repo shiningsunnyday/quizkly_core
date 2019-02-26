@@ -4,29 +4,11 @@ import collections
 import unittest
 from unittest import mock
 
-import numpy
 from nltk import stem
 
-from datasets.create_test_data import GAP_DATA_CONTAINER
+from datasets.create_test_data import GAP_DATA_CONTAINER, DummyWordModel
 from filters import distractor_filter
 from proto import question_candidate_pb2
-
-
-class DummyWordModel(object):
-    """ Dummy word model class. """
-    def most_similar_cosmul(self, positive, topn):
-        word_score = [
-            ("a'_b", 1.0), ("b!_c", 0.9), ("c_d.", 0.8), ("d_e", 0.7),
-            ("e_f", 0.6), ("f_g,", 0.5), ("g._h", 0.4), ("h_i", 0.3),
-            ("i_j", 0.2), ("j_k", 0.1)
-        ]
-        return word_score[:topn]
-
-    def __getitem__(self, key):
-        return numpy.random.normal(size=(10))
-
-    def similarity(self, x, y):
-        return numpy.random.normal(size=1)
 
 
 class TestFilterDistractors(unittest.TestCase):

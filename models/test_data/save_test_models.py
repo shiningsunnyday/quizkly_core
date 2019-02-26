@@ -6,8 +6,9 @@ import tempfile
 import tensorflow as tf
 from gensim.models.word2vec import Word2Vec
 
-from models import sentence_classifier
+from models import distractor_encoder, sentence_classifier
 from models.binary_gap_classifier import train_model
+from models.distractor_encoder import HParams as DistHParams
 from models.sentence_classifier import HParams as SentHParams
 
 
@@ -78,7 +79,27 @@ def save_word2vec_model():
     word2vec.wv.save_word2vec_format(saved_model_dir)
 
 
+def save_distractor_encoder():
+    hparams = DistHParams(
+        train_records="datasets/testdata/distractors_test",
+        eval_records="datasets/testdata/distractors_test",
+        question_feature="question",
+        answer_feature="answer",
+        distractor_feature="distractor",
+        negatives_feature="negatives",
+        negatives_length_feature="negatives_length",
+        vector_size=10,
+        train_batch_size=5,
+        eval_batch_size=5,
+        learning_rate=0.001,
+        is_test=True,
+    )
+    saved_model_dir = path.join("models", "test_data", "distractor_encoder")
+    save_model(hparams, distractor_encoder, saved_model_dir)
+
+
 if __name__ == "__main__":
     save_sentence_classifier()
     save_binary_gap_classifier()
     save_word2vec_model()
+    save_distractor_encoder()
