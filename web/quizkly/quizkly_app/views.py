@@ -109,21 +109,23 @@ def process_corpus(corpus_id, quiz_id):
     for batch in gen.generate_questions(corpus.content):
         question_candidates.extend(batch)
     for qc in question_candidates:
-        answer = qc.gap.text
-        question = qc.question_sentence.replace(answer, "_________")
-        print("Question", question)
-        ques = Question(quiz = quiz, question = question, correct = 0)
-        ques.save()
-        print(ques)
-        ans = Distractor(index = 0, question = ques, text = answer)
-        ans.save()
-        print("Answer", ans)
-        for i, dist in enumerate(qc.distractors):
-            print(i, dist.text)
-            distractor = Distractor(index = i + 1, question = ques, text = dist.text)
-            distractor.save()
-            print("Distractor", distractor)
-        print("Answer", answer)
+        print("qc generated")
+        if(len(qc.distractors) >= 2):
+            answer = qc.gap.text
+            question = qc.question_sentence.replace(answer, "_________")
+            print("Question", question)
+            ques = Question(quiz = quiz, question = question, correct = 0)
+            ques.save()
+            print(ques)
+            ans = Distractor(index = 0, question = ques, text = answer)
+            ans.save()
+            print("Answer", ans)
+            for i, dist in enumerate(qc.distractors):
+                print(i, dist.text)
+                distractor = Distractor(index = i + 1, question = ques, text = dist.text)
+                distractor.save()
+                print("Distractor", distractor)
+            print("Answer", answer)
 
 # process_corpus(sz.data['id'])
 class CorpusList(APIView):
@@ -155,6 +157,22 @@ class CorpusList(APIView):
             return Response(sz.data, status=status.HTTP_201_CREATED)
         return Response(sz.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def put(self, request, format = None):
+        appuser = AppUser(user = self.request.user)
+        corpus_id = list(Corpus.objects.all().filter(user = appuser))[int(self.request.data["quiz_id"])].id
+        quiz = Corpus.objects.get(id = corpus_id).quiz
+        questions = list(Question.objects.all().filter(quiz = quiz))
+        for edit in self.request.data["edits"]:
+            if edit[1] < 0:
+                question = questions[edit[1]]
+                question.question = edit[2]
+                question.save()
+            else:
+                question = questions[edit[1]]
+                distractors = list(Distractor.objects.all().filter(question = question))
+                distractor = distractors[edit[0]]
+                distractor.text = edit[2]
+                distractor.save()
 
 class CorpusDetail(APIView):
 
@@ -194,7 +212,6 @@ class CorpusDetail(APIView):
         corpus.delete()
         return HttpResponse(status=status.HTTP_204_NO_CONTENT)
 
-
 class QuizList(generics.ListAPIView):
     permission_classes = (IsAuthenticated,)
     parser_classes = (JSONParser,)
@@ -208,8 +225,12 @@ class QuizList(generics.ListAPIView):
 
 class QuizDetail(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = (IsAuthenticated,)
-    queryset = Quiz.objects.all()
+
+    # def get_queryset(self):
+    #     queryset = Quiz.objects.all()
+    #     return queryset.filter(corpus = self.request.user)
     serializer_class = QuizSerializer
+
 
 
 class QuestionList(generics.ListAPIView):
