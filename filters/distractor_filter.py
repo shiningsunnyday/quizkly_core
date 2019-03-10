@@ -68,7 +68,6 @@ def filter_distractors_single(question_candidate, spacy_doc, parser,
         return []
     distractors = filter_words_in_sent(gap, question, distractors, stemmer)
     distractors = filter_stopword(distractors)
-    distractors = filter_part_of_speech(gap, distractors, parser)
     distractors = filter_wordnet(gap, distractors, stemmer)
     distractors = rescore(word_model, spacy_doc, distractors, gap)
     final_distractors = [d[0] for d in distractors[:num_dists]]
@@ -181,32 +180,25 @@ def filter_words_in_sent(gap, sentence, distractors, stemmer):
     return filtered_distractors
 
 
-def filter_part_of_speech(gap, distractors, parser):
+def filter_part_of_speech(gap, distractors):
     """
     Removes distractor candidates that have a different
     part of speech from selected gap.
 
     Args:
         gap: chosen gap.
-        distractors: list of (candidate, score) tuples.
-        parser: spacy parser
+        distractors: list of (synsets, (candidate, score)) tuples.
 
     Returns:
-        list of (candidate, score) tuples.
+        list of (synsets, (candidate, score)) tuples.
     """
 
     ref_tag = gap.pos_tags[-1]
 
     filtered_distractors = []
-    phrases = [pair[0] for pair in distractors]
-    tokenized = parser.tokenizer.pipe(phrases, batch_size=len(phrases),
-                                      n_threads=4)
-    tagged_phrases = parser.tagger.pipe(tokenized, batch_size=len(phrases),
-                                        n_threads=4)
     for dist in distractors:
-        tagged = next(tagged_phrases)
-        dist_tag = tagged[-1].pos_
-        if ref_tag == dist_tag:
+        pos_options = [syn.pos() for syn in dist[0]]
+        if POS_TO_WN[ref_tag] in pos_options:
             filtered_distractors.append(dist)
     return filtered_distractors
 
@@ -234,7 +226,7 @@ def filter_stopword(distractors):
 
 def filter_wordnet(gap, distractors, stemmer):
     """
-    Filter by wordnet relations.
+    Filter by wordnet relations and part of speech.
 
     Args:
         gap: chosen gap.
@@ -249,7 +241,8 @@ def filter_wordnet(gap, distractors, stemmer):
         gap, distractors)
 
     candidates = zip(candidates_syn, distractors)
-
+    # filtering by part of speech.
+    candidates = filter_part_of_speech(gap, candidates)
     # filtering by wordnet similarity
     candidates = filter_wordnetsim(candidates, gap_syn)
     # filtering meronyms and hyponyms
@@ -273,7 +266,7 @@ def _prep_wordnet_synsets(gap, distractors):
         gap_hypomeronyms += _get_hypomeronyms(syn)
     for cand, _ in distractors:
         candidates_syn.append(
-            wn.synsets(cand.replace(" ", "_"), POS_TO_WN[ref_tag]))
+            wn.synsets(cand.replace(" ", "_")))
     return candidates_syn, gap_syn, gap_hypomeronyms
 
 

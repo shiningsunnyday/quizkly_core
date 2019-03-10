@@ -5,6 +5,7 @@ import unittest
 from unittest import mock
 
 from nltk import stem
+from nltk.corpus import wordnet as wn
 
 from datasets.create_test_data import GAP_DATA_CONTAINER, DummyWordModel
 from filters import distractor_filter
@@ -96,28 +97,27 @@ class TestFilterDistractors(unittest.TestCase):
         self.assertNotIn(("genetic recombination", 0.90), filtered_distractors)
 
     def test_filter_part_of_speech(self):
-        mock_parser = mock.Mock()
-        mock_parser.tokenizer = mock.Mock()
-        mock_parser.tokenizer.pipe = mock.MagicMock(return_value=None)
-        mock_parser.tagger = mock.Mock()
-        TaggedTuple = collections.namedtuple("TaggedTuple", ["pos_"])
+
+        class Syn(object):
+            def __init__(self, pos):
+                self._pos = pos
+            def pos(self):
+                return self._pos
+
         distractors = [
-            ("respiratory system", 0.90), ("cardiovascular", 0.90),
-            ("organ", 0.8), ("at", 0.7)
+            ([Syn(wn.NOUN)], ("respiratory system", 0.90)),
+            ([Syn(wn.ADJ)], ("cardiovascular", 0.90)),
+            ([Syn(wn.NOUN)], ("organ", 0.8)),
+            ([Syn(wn.ADV)], ("at", 0.7))
         ]
         for qc in self._question_cands:
-            mock_parser.tagger.pipe = mock.MagicMock(
-                return_value=iter(
-                    [[TaggedTuple("ADJ"), TaggedTuple("NOUN")],
-                     [TaggedTuple("ADJ")],
-                     [TaggedTuple("NOUN")],
-                     [TaggedTuple("ADP")]]
-                )
-            )
             filtered_distractors = distractor_filter.filter_part_of_speech(
-                qc.gap, distractors, mock_parser)
-            self.assertNotIn(("cardiovascular", 0.90), filtered_distractors)
-            self.assertNotIn(("at", 0.7), filtered_distractors)
+                qc.gap, distractors)
+            self.assertNotIn(
+                ([Syn(wn.ADJ)], ("cardiovascular", 0.90)),
+                filtered_distractors)
+            self.assertNotIn(
+                ([Syn(wn.ADV)], ("at", 0.7)), filtered_distractors)
 
     def test_filter_wordnet(self):
         distractors = [

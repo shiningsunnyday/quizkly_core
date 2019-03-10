@@ -24,16 +24,28 @@ class BinaryGapClassifierClient(object):
         with self._graph.as_default(), self._session.as_default():
             return self._model.predict(encodings)
 
-    def choose_best_gaps(self, question_candidates):
-        """Chooses the best gap for every question candidate."""
+    def choose_best_gaps(self, question_candidates, freq_penalty=0.0):
+        """Chooses the best gap for every question candidate.
+        Args:
+            question_candidates: list of question candidates to choose gaps for.
+            freq_penalty: weight of frequency penalty.
+        """
         gap_start_idx = [0]
         gap_embeddings = []
+        gap_freqs = []
+        batch_text = " ".join(
+            qc.question_sentence for qc in question_candidates)
         for question_candidate in question_candidates:
             gap_embeddings.extend(
                 [gap.embedding for gap in question_candidate.gap_candidates]
             )
+            gap_freqs.extend(
+                [batch_text.count(gap.text) 
+                 for gap in question_candidate.gap_candidates]
+            )
             gap_start_idx.append(len(gap_embeddings))
-        gap_predictions = self.predict(gap_embeddings)
+        gap_predictions = np.squeeze(self.predict(gap_embeddings), axis=1)
+        gap_predictions -= np.array(gap_freqs) * freq_penalty
         chosen_gaps = []
         for i, question_candidate in enumerate(question_candidates):
             best_gap_idx = np.argmax(
