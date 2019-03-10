@@ -27,7 +27,7 @@ class BinaryGapClassifierClient(object):
     def choose_best_gaps(self, question_candidates, freq_penalty=0.0):
         """Chooses the best gap for every question candidate.
         Args:
-            question_candidates: list of question candidates to choose gaps for.
+            question_candidates: question candidates to choose gaps for.
             freq_penalty: weight of frequency penalty.
         """
         gap_start_idx = [0]
@@ -40,7 +40,7 @@ class BinaryGapClassifierClient(object):
                 [gap.embedding for gap in question_candidate.gap_candidates]
             )
             gap_freqs.extend(
-                [batch_text.count(gap.text) 
+                [batch_text.count(gap.text)
                  for gap in question_candidate.gap_candidates]
             )
             gap_start_idx.append(len(gap_embeddings))

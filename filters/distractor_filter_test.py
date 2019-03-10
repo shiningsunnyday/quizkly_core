@@ -101,6 +101,7 @@ class TestFilterDistractors(unittest.TestCase):
         class Syn(object):
             def __init__(self, pos):
                 self._pos = pos
+
             def pos(self):
                 return self._pos
 
