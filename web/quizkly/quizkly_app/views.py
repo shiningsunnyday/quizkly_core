@@ -18,7 +18,7 @@ from quizkly_app.serializers import (
     QuestionSerializer,
     DistractorSerializer
 )
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from rest_framework.metadata import SimpleMetadata
 from django.contrib.auth.models import User
 from django.views.decorators.csrf import csrf_exempt
@@ -164,7 +164,7 @@ class CorpusList(APIView):
         questions = list(Question.objects.all().filter(quiz = quiz))
         for edit in self.request.data["edits"]:
             if edit[1] < 0:
-                question = questions[edit[1]]
+                question = questions[edit[0]]
                 question.question = edit[2]
                 question.save()
             else:
@@ -173,6 +173,8 @@ class CorpusList(APIView):
                 distractor = distractors[edit[0]]
                 distractor.text = edit[2]
                 distractor.save()
+        sz = QuizSerializer(Corpus.objects.get(id = corpus_id).quiz)
+        return Response(sz.data)
 
 class CorpusDetail(APIView):
 
@@ -224,14 +226,27 @@ class QuizList(generics.ListAPIView):
 
 
 class QuizDetail(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = (IsAuthenticated,)
 
-    # def get_queryset(self):
-    #     queryset = Quiz.objects.all()
-    #     return queryset.filter(corpus = self.request.user)
+    permission_classes = (IsAuthenticated,)
     serializer_class = QuizSerializer
 
+    def put(self, request, pk, format = None):
+        appuser = AppUser(user = self.request.user)
+        corpus_id = list(Corpus.objects.all().filter(user = appuser))[pk].id
+        quiz = Corpus.objects.get(id = corpus_id).quiz
+        quiz.name = self.request.data["newTitle"]
+        quiz.save()
+        sz = QuizSerializer(quiz)
+        return Response(sz.data)
 
+    def delete(self, request, pk, format = None):
+        quizzes = Quiz.objects.all().filter(corpus__user__user = self.request.user)
+        quiz = list(quizzes)[pk]
+        Distractor.objects.all().filter(question__quiz = quiz).delete()
+        Question.objects.all().filter(quiz = quiz).delete()
+        quiz.corpus.delete()
+        quiz.delete()
+        return HttpResponse(status = status.HTTP_204_NO_CONTENT)
 
 class QuestionList(generics.ListAPIView):
     permission_classes = (IsAuthenticated,)
