@@ -43,8 +43,6 @@ def filter_gaps(spacy_docs, batch_size=50, elmo_client=None):
         if not elmo_client:
             yield questions_candidates
         questions_candidates = _encode_gaps(questions_candidates, elmo_client)
-        for j, qc in enumerate(questions_candidates):
-            qc.question_sentence = spacy_docs[j + i].text
         yield questions_candidates
         i += batch_size
 
