@@ -42,7 +42,6 @@ class SignUp(APIView):
         user.save()
         appuser.save()
         szuser = UserSerializer(user, data=request.data)
-        szappuser = AppUserSerializer(appuser, data=request.data)
         if szuser.is_valid():
             return Response(szuser.data)
         return HttpResponse(status=status.HTTP_400_BAD_REQUEST)

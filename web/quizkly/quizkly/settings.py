@@ -14,7 +14,6 @@ import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ROOT = os.path.dirname("/Users/shiningsunnyday/Documents/GitHub/kvizo_core/")
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
 
@@ -106,7 +105,8 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME":
-     "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+     '''django.contrib.auth.password_validation.
+        UserAttributeSimilarityValidator'''},
     {"NAME":
      "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME":
