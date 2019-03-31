@@ -34,7 +34,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--save_checkpoints_secs",
-    default=240,
+    default=None,
     type=int,
     help=(
         "Save checkpoints every this many seconds. "

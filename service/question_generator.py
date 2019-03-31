@@ -38,14 +38,21 @@ class QuestionGenerator(object):
             lambda s: s.lower() in spacy.lang.en.stop_words.STOP_WORDS,
             spacy.attrs.IS_STOP)
 
-    def generate_questions(self, text, batch_size=50, is_test=False):
+    def generate_questions(self, text, batch_size=50, context_window=5,
+                           is_test=False):
         text = preprocessor.preprocess_text(text)
         sentences = nltk.sent_tokenize(text)
         i = 0
         while i < len(sentences):
             chosen_sent_idxs = []
             batch = sentences[i: i + batch_size]
-            predictions = self._sentence_client.predict(batch)
+            contexts = [
+                " ".join(sentences[max(j - context_window, 0):
+                                   min(j + context_window, len(sentences))])
+                for j in range(i, i + batch_size)
+            ]
+            predictions = self._sentence_client.predict(
+                batch, contexts)
             for j, p in enumerate(predictions):
                 if p > 0 or is_test:
                     chosen_sent_idxs.append(j)

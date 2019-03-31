@@ -4,29 +4,11 @@ import collections
 import unittest
 from unittest import mock
 
-import numpy
 from nltk import stem
 
-from datasets.create_test_data import GAP_DATA_CONTAINER
+from datasets.create_test_data import GAP_DATA_CONTAINER, DummyWordModel
 from filters import distractor_filter
 from proto import question_candidate_pb2
-
-
-class DummyWordModel(object):
-    """ Dummy word model class. """
-    def most_similar_cosmul(self, positive, topn):
-        word_score = [
-            ("a'_b", 1.0), ("b!_c", 0.9), ("c_d.", 0.8), ("d_e", 0.7),
-            ("e_f", 0.6), ("f_g,", 0.5), ("g._h", 0.4), ("h_i", 0.3),
-            ("i_j", 0.2), ("j_k", 0.1)
-        ]
-        return word_score[:topn]
-
-    def __getitem__(self, key):
-        return numpy.random.normal(size=(10))
-
-    def similarity(self, x, y):
-        return numpy.random.normal(size=1)
 
 
 class TestFilterDistractors(unittest.TestCase):
@@ -36,7 +18,8 @@ class TestFilterDistractors(unittest.TestCase):
             "The circulatory system pumps blood to all organs.",
             "The cytoplasm is the semiliquid portion of the cell.",
             "Proteins are manufactured by ribosomes",
-            "Mr. Best flew to New York on Saturday morning."
+            "Mr. Best flew to New York on Saturday morning.",
+            "This process known as gene recombination helps in reproduction."
         ]
         gaps = [
             question_candidate_pb2.Gap(
@@ -53,6 +36,10 @@ class TestFilterDistractors(unittest.TestCase):
             ),
             question_candidate_pb2.Gap(
                 text="Saturday", start_index=7, end_index=8,
+                pos_tags=["NOUN"]
+            ),
+            question_candidate_pb2.Gap(
+                text="recombination", start_index=5, end_index=6,
                 pos_tags=["NOUN"]
             )
         ]
@@ -80,19 +67,33 @@ class TestFilterDistractors(unittest.TestCase):
             ("organ", 0.8), ("digestive system", 0.7)
         ]
         filtered_distractors = distractor_filter.filter_words_in_sent(
+            self._question_cands[0].gap,
             self._question_cands[0].question_sentence,
             distractors, self._stemmer)
         self.assertNotIn(("organ", 0.8), filtered_distractors)
         self.assertNotIn(("blood", 0.9), filtered_distractors)
+
         distractors = [
             ("respiratory system", 0.90), ("blood", 0.90),
             ("cells", 0.8), ("portions", 0.7)
         ]
         filtered_distractors = distractor_filter.filter_words_in_sent(
+            self._question_cands[1].gap,
             self._question_cands[1].question_sentence,
             distractors, self._stemmer)
         self.assertNotIn(("cells", 0.8), filtered_distractors)
         self.assertNotIn(("portions", 0.7), filtered_distractors)
+
+        distractors = [
+            ("gene replication", 0.90), ("genetic recombination", 0.90),
+            ("replication", 0.8), ("splitting", 0.7)
+        ]
+        filtered_distractors = distractor_filter.filter_words_in_sent(
+            self._question_cands[4].gap,
+            self._question_cands[4].question_sentence,
+            distractors, self._stemmer)
+        self.assertNotIn(("gene replication", 0.90), filtered_distractors)
+        self.assertNotIn(("genetic recombination", 0.90), filtered_distractors)
 
     def test_filter_part_of_speech(self):
         mock_parser = mock.Mock()
