@@ -39,17 +39,9 @@ INSTALLED_APPS = [
     "quizkly_app.apps.QuizklyAppConfig",
 ]
 
-REST_FRAMEWORK = {}
-
-# 'DEFAULT_PERMISSION_CLASSES': (
-#     'rest_framework.permissions.IsAuthenticated',
-# ),
-
-# 'DEFAULT_AUTHENTICATION_CLASSES': (
-#     'rest_framework.authentication.SessionAuthentication',
-#     'rest_framework.authentication.BasicAuthentication',
-# ),
-# 'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
+REST_FRAMEWORK = {'DEFAULT_PERMISSION_CLASSES': (
+    'rest_framework.permissions.IsAuthenticated',
+)}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -93,20 +85,14 @@ DATABASES = {
     }
 }
 
-# DATABASES = {
-#     'default': dj_database_url.config(
-#         default = config('DATABASE_URL')
-#     )
-# }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME":
-     '''django.contrib.auth.password_validation.
-        UserAttributeSimilarityValidator'''},
+     ("django.contrib.auth.password_validation."
+      "UserAttributeSimilarityValidator")},
     {"NAME":
      "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME":
@@ -134,4 +120,3 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 
 STATIC_URL = "/static/"
-# django_heroku.settings(locals())

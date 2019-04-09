@@ -23,7 +23,7 @@ from service.sentence_classifier_client import SentenceClassifierClient
 
 class QuestionGenerator(object):
     def __init__(self, sentence_model_path, gap_model_path,
-                 word_model_path, elmo_client, parser = spacy.load("en_core_web_md")):
+                 word_model_path, elmo_client, parser):
         self._sentence_client = SentenceClassifierClient(sentence_model_path)
         self._gap_client = BinaryGapClassifierClient(gap_model_path)
         self._elmo_client = elmo_client

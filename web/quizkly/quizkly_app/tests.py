@@ -1,7 +1,19 @@
 from django.test import TestCase
 from quizkly_app.models import User, AppUser, Quiz, Corpus
 from django.contrib.auth import authenticate
+import spacy
+from service.question_generator import QuestionGenerator
 from quizkly_app.views import process_corpus
+from datasets.create_test_data import DummyElmoClient
+
+gen = None
+
+gap_model_path = "../../models/test_data/gap_classifier.h5"
+sentence_model_path = "../../models/test_data/sentence_classifier/saved_model"
+word_model_path = "../../models/test_data/word_model"
+parser = spacy.load("en_core_web_sm")
+gen = QuestionGenerator(sentence_model_path, gap_model_path, word_model_path,
+                        DummyElmoClient(), parser)
 
 user_data = {
     "email": "girishkumar@gmail.com",
@@ -70,4 +82,5 @@ class QuizTestCase(TestCase):
         test_app_user = AppUser.objects.get(user__email=user_data["email"])
         corpus = Corpus.objects.create(user=test_app_user)
         quiz = Quiz.objects.create(corpus=corpus, name=test_data['quiz_name'])
-        process_corpus(corpus.id, quiz.id)
+        global gen
+        process_corpus(corpus.id, quiz.id, gen)

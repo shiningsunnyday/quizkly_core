@@ -22,10 +22,18 @@ from service.question_generator import QuestionGenerator
 from service.elmo_client import ElmoClient
 from rest_framework.decorators import api_view
 import os
+import json
 
-dir_path = os.path.dirname(os.path.realpath(__file__))
-dir_path = dir_path[:dir_path.index('/web')]
-gen = None
+try:
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    dir_path = dir_path[:dir_path.index('/web')]
+    gen = None
+    ec = ElmoClient()
+    with open(str(os.getenv("MODELS_CONFIG")), 'r') as file:
+        json = json.load(file)
+        gen = QuestionGenerator(json["smp"], json["gmp"], json["wmp"], ec)
+except FileNotFoundError:
+    pass
 
 
 class SignUp(APIView):
@@ -53,7 +61,6 @@ class Login(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request, format=None):
-        print(request)
         username = request.data["username"]
         password = request.data["password"]
         email = request.data["email"]
@@ -62,10 +69,8 @@ class Login(APIView):
             raise AuthenticationFailed("Username/password invalid.")
         else:
             login(request, user)
-            print(request.data)
             sz = UserSerializer(user, data=request.data)
             if sz.is_valid():
-                print("Valid")
                 return Response(sz.data)
         return Response(sz.data)
 
@@ -86,19 +91,14 @@ class UserDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = UserSerializer
 
 
-def process_corpus(corpus_id, quiz_id):
+def process_corpus(corpus_id, quiz_id, gener=None):
     corpus = Corpus.objects.get(id=corpus_id)
     quiz = Quiz.objects.get(id=quiz_id)
-    global dir_path
-    smp = dir_path + "/models/1547524090"
-    gmp = dir_path + "/models/gap_model"
-    wmp = dir_path + "/models/wmdatabio70.bin"
-    ec = ElmoClient()
-    global gen
-    if gen is None:
-        print("need new gen")
-        gen = QuestionGenerator(smp, gmp, wmp, ec)
     question_candidates = []
+    if gener is None:
+        global gen
+    else:
+        gen = gener
     for batch in gen.generate_questions(corpus.content):
         question_candidates.extend(batch)
     for qc in question_candidates:
