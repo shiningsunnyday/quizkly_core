@@ -30,7 +30,7 @@ try:
     dir_path = dir_path[:dir_path.index('/web')]
     gen = None
     ec = ElmoClient()
-    parser = spacy.load("en_core_web_sm")
+    parser = spacy.load("en_core_web_md")
     with open(str(os.getenv("MODELS_CONFIG")), 'r') as file:
         json = json.load(file)
         gen = QuestionGenerator(
