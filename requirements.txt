@@ -9,7 +9,6 @@ scikit-learn==0.20.0
 tensorboard==1.11.0
 tensorflow==1.11.0
 tensorflow-hub==0.1.1
-certifi==2018.11.29
 chardet==3.0.4
 dj-database-url==0.5.0
 Django==2.1.5
