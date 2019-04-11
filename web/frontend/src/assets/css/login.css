@@ -1,0 +1,97 @@
+/* CSS for login and signup components */
+.container {
+  display: flex;
+  flex-direction: column;
+  margin-right: 3%;
+  margin-left: 3%;
+  margin-top: -5%;
+}
+
+.loginbox {
+  background: #C4C4C4;
+  box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  width: 400px;
+  align-self: center;
+  align-items: center;
+  margin-top: 5%;
+}
+
+.email {
+  margin-top: 40px;
+}
+
+.password {
+  margin-top: 30px;
+  margin-bottom: 30px;
+}
+.darkBtn {
+  border: 0;
+  font-family: Nunito;
+  font-style: normal;
+  font-weight: 300;
+  font-size: 28px;
+  background: #3B6167;
+  color: #E5E5E5;
+  opacity: 0.7;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  padding: 5px 50px;
+}
+
+.darkBtn:hover {
+  opacity: 0.7;
+  box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24), 0 17px 50px 0 rgba(0,0,0,0.19);
+}
+
+.lightTextBox {
+  border: 0;
+  outline: none;
+  background-color: #9CC0BA;
+  border-radius: 10px;
+  font-family: Nunito;
+  font-style: normal;
+  font-weight: 200;
+  font-size: 28px;
+  line-height: normal;
+  text-align: left;
+  color: #3B6167;
+  padding: 10px;
+}
+
+::placeholder {
+  color: #E5E5E5;
+  opacity: 1; /* Firefox */
+}
+
+.errorBox {
+  background: #9F4A35;
+  box-sizing: border-box;
+  box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+  border-radius: 10px;
+  font-family: Nunito;
+  font-style: normal;
+  font-weight: 100;
+  font-size: 18px;
+  line-height: normal;
+  text-align: center;
+  color: #E5E5E5;
+  width: 400px;
+  align-self: center;
+  margin: 10px 0;
+  padding: 0.5% 0;
+  opacity: 0.7;
+}
+.signupText {
+  margin-bottom: 10px;
+  color: #3B6167;
+}
+
+.signupText:hover {
+  cursor: pointer;
+  opacity: 0.6;
+  -webkit-transition-duration: 0.4s; /* Safari */
+  transition-duration: 0.4s;
+}
