@@ -1,19 +1,7 @@
-flake8==3.6.0
-gensim==3.6.0
-nltk==3.3
-numpy==1.15.3
-spacy==2.0.18
-protobuf==3.6.1
-pytest==3.10.0
-scikit-learn==0.20.0
-tensorboard==1.11.0
-tensorflow==1.11.0
-tensorflow-hub==0.1.1
 certifi==2018.11.29
 chardet==3.0.4
 dj-database-url==0.5.0
 Django==2.1.5
-django-cors-headers==2.5.2
 django-heroku==0.3.1
 djangorestframework==3.9.1
 gunicorn==19.9.0
@@ -21,7 +9,6 @@ httpie==1.0.2
 idna==2.8
 psycopg2==2.7.7
 Pygments==2.3.1
-PyJWT==1.7.1
 pytz==2018.9
 requests==2.21.0
 urllib3==1.24.1

@@ -13,7 +13,7 @@ echo "Building test models."
 python -m models.test_data.save_test_models
 
 echo "Downloading sentence tokenizer data."
-python -m nltk.downloader punkt 
+python -m nltk.downloader punkt
 
 echo "Downloading wordnet."
 python -m nltk.downloader wordnet
@@ -21,3 +21,7 @@ python -m nltk.downloader wordnet
 echo "Downloading spacy models"
 python -m spacy download en_core_web_md
 python -m spacy download en_core_web_sm
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+export PYTHONPATH="$DIR:$PYTHONPATH"
+echo $PYTHONPATH
