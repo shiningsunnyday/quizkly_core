@@ -6,9 +6,7 @@ cd web/quizkly
 python manage.py test
 RET3=$?
 cd ../frontend
-npm run lint
-RET4=$?
-if [ $RET1 -ne 0 ] || [ $RET2 -ne 0 ] || [ $RET3 -ne 0 ] || [ $RET4 -ne 0 ]
+if [ $RET1 -ne 0 ] || [ $RET2 -ne 0 ] || [ $RET3 -ne 0 ]
 then
 	exit 1
 else
