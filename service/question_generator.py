@@ -49,7 +49,7 @@ class QuestionGenerator(object):
             contexts = [
                 " ".join(sentences[max(j - context_window, 0):
                                    min(j + context_window, len(sentences))])
-                for j in range(i, i + batch_size)
+                for j in range(i, i + len(batch))
             ]
             predictions = self._sentence_client.predict(
                 batch, contexts)
