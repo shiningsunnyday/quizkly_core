@@ -21,6 +21,7 @@ from django.contrib.auth import authenticate, login
 from service.question_generator import QuestionGenerator
 from service.elmo_client import ElmoClient
 from rest_framework.decorators import api_view
+import spacy
 import os
 import json
 
@@ -29,9 +30,10 @@ try:
     dir_path = dir_path[:dir_path.index('/web')]
     gen = None
     ec = ElmoClient()
+    parser = spacy.load("en_core_web_sm")
     with open(str(os.getenv("MODELS_CONFIG")), 'r') as file:
         json = json.load(file)
-        gen = QuestionGenerator(json["smp"], json["gmp"], json["wmp"], ec)
+        gen = QuestionGenerator(json["smp"], json["gmp"], json["wmp"], ec, parser)
 except FileNotFoundError:
     pass
 
