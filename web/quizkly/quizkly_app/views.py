@@ -33,7 +33,8 @@ try:
     parser = spacy.load("en_core_web_sm")
     with open(str(os.getenv("MODELS_CONFIG")), 'r') as file:
         json = json.load(file)
-        gen = QuestionGenerator(json["smp"], json["gmp"], json["wmp"], ec, parser)
+        gen = QuestionGenerator(
+            json["smp"], json["gmp"], json["wmp"], ec, parser)
 except FileNotFoundError:
     pass
 
