@@ -5,6 +5,7 @@ RET2=$?
 cd web/quizkly
 python manage.py test
 RET3=$?
+cd ../frontend
 if [ $RET1 -ne 0 ] || [ $RET2 -ne 0 ] || [ $RET3 -ne 0 ]
 then
 	exit 1

@@ -34,7 +34,8 @@ try:
     with open(str(os.getenv("MODELS_CONFIG")), 'r') as file:
         json = json.load(file)
         gen = QuestionGenerator(
-            json["smp"], json["gmp"], json["wmp"], ec, parser)
+            json["sentence_model"],
+            json["gap_model"], json["word_model"], ec, parser)
 except FileNotFoundError:
     pass
 
