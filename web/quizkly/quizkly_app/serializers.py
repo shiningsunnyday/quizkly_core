@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from quizkly_app.models import AppUser, Corpus, Quiz, Question, Distractor
+from quizkly_app.models import AppUser, Corpus, Quiz, \
+    Question, Distractor, Concept
 from django.contrib.auth.models import User
 
 
@@ -18,12 +19,19 @@ class QuestionSerializer(serializers.ModelSerializer):
         fields = ("id", "question", "distractor_set", "correct")
 
 
+class ConceptSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Concept
+        fields = ("id", "concept")
+
 class QuizSerializer(serializers.ModelSerializer):
     question_set = QuestionSerializer(many=True)
+    concept_set = ConceptSerializer(many=True)
 
     class Meta:
         model = Quiz
-        fields = ("id", "corpus", "name", "question_set")
+        fields = ("id", "corpus", "name", "question_set", "concept_set")
 
 
 class CorpusSerializer(serializers.ModelSerializer):

@@ -32,6 +32,16 @@ class Quiz(models.Model):
     class Meta:
         ordering = ("generated",)
 
+class Concept(models.Model):
+    quiz = models.ForeignKey(
+        Quiz,
+        on_delete=models.CASCADE)
+    concept = models.CharField(max_length=30)
+    generated = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("generated",)
+        
 
 class Question(models.Model):
     quiz = models.ForeignKey(

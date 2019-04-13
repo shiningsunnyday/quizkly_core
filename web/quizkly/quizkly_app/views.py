@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.parsers import JSONParser
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from quizkly_app.models import AppUser, Corpus, Quiz, Question, Distractor
+from quizkly_app.models import AppUser, Corpus, Quiz, Question, Distractor, Concept
 from rest_framework.reverse import reverse
 from quizkly_app.serializers import (
     AppUserSerializer,
@@ -24,6 +24,8 @@ from rest_framework.decorators import api_view
 import spacy
 import os
 import json
+import random
+import numpy as np
 
 try:
     dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -99,6 +101,7 @@ def process_corpus(corpus_id, quiz_id, gener=None):
     corpus = Corpus.objects.get(id=corpus_id)
     quiz = Quiz.objects.get(id=quiz_id)
     question_candidates = []
+    all_distractors = []
     if gener is None:
         global gen
     else:
@@ -106,6 +109,7 @@ def process_corpus(corpus_id, quiz_id, gener=None):
     for batch in gen.generate_questions(corpus.content):
         question_candidates.extend(batch)
     for qc in question_candidates:
+        all_distractors += qc.distractors
         if(len(qc.distractors) >= 2):
             answer = qc.gap.text
             question = qc.question_sentence.replace(answer, "_________")
@@ -117,6 +121,15 @@ def process_corpus(corpus_id, quiz_id, gener=None):
                 distractor = Distractor(
                     index=i+1, question=ques, text=dist.text)
                 distractor.save()
+    represents = []
+    for dist in random.sample(all_distractors, len(all_distractors)):
+        dist = dist.text
+        if not np.array(list(map(lambda x: x.isdigit(), dist.split()))).any():
+            represents.append(dist)
+            concept = Concept(quiz=quiz, concept=dist)
+            concept.save()
+        if len(represents) == 6:
+            break
 
 
 class CorpusList(APIView):
