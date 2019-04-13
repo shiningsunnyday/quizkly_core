@@ -25,6 +25,7 @@ class ConceptSerializer(serializers.ModelSerializer):
         model = Concept
         fields = ("id", "concept")
 
+
 class QuizSerializer(serializers.ModelSerializer):
     question_set = QuestionSerializer(many=True)
     concept_set = ConceptSerializer(many=True)

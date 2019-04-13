@@ -32,6 +32,7 @@ class Quiz(models.Model):
     class Meta:
         ordering = ("generated",)
 
+
 class Concept(models.Model):
     quiz = models.ForeignKey(
         Quiz,
@@ -41,7 +42,7 @@ class Concept(models.Model):
 
     class Meta:
         ordering = ("generated",)
-        
+
 
 class Question(models.Model):
     quiz = models.ForeignKey(
