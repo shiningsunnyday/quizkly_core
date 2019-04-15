@@ -3,8 +3,9 @@ RET1=$?
 flake8
 RET2=$?
 cd web/quizkly
-# python manage.py migrate auth
-# python manage.py makemigrations
+python manage.py makemigrations
+python manage.py migrate auth
+python manage.py migrate
 python manage.py test
 RET3=$?
 cd ../frontend
