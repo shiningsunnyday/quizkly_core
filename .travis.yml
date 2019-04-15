@@ -12,4 +12,4 @@ before_script:
   - export PATH=$PATH:$PWD/protoc3/bin
   - chmod +x build.sh && . ./build.sh
 script:
-  - chmod +x test.sh && ./test.sh
+  - chmod +x test.sh && . ./test.sh

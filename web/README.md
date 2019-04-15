@@ -1,5 +1,8 @@
 ## Setting Up Backend
 Install required libraries with `pip install -r requirements.txt`\
+Migrate models with command
+'python manage.py makemigrations'
+`python manage.py migrate`
 Alter or create a config.json file that specifies absolute paths to the models
 An examples is be as follows:
 `{
@@ -42,4 +45,3 @@ npm run lint
 
 #### Customize configuration
 See [Configuration Reference](https://cli.vuejs.org/config/).
-
