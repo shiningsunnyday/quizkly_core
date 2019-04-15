@@ -30,8 +30,9 @@ CSRF_USE_SESSIONS = False
 
 INSTALLED_APPS = [
     "corsheaders",
-    "django.contrib.admin",
     "django.contrib.auth",
+    "django.contrib.admin",
+    "django.contrib.sites",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",

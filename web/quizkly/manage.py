@@ -19,7 +19,7 @@ if __name__ == "__main__":
             "available on your PYTHONPATH environment variable? Did you "
             "forget to activate a virtual environment?"
         ) from exc
-    if len(sys.argv) != 2:
+    if flags[-1][0] == 'runserver':
         os.environ.setdefault("MODELS_CONFIG", flags[0].config_file)
         execute_from_command_line(sys.argv[:-1])
     else:
